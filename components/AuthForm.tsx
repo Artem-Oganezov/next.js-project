@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ApiError, api } from "@/lib/client/api";
 import type { User } from "@/types/dino-game.types";
 
 type Mode = "login" | "register";
@@ -29,44 +30,38 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = form.username.trim();
-    if (!trimmed) return;
+    const trimmedUsername = form.username.trim();
+    if (!trimmedUsername) return;
 
     setLoading(true);
     setError(null);
 
-    const endpoint = isRegister ? "/api/auth/register" : "/api/auth/login";
-    const body = isRegister
-      ? { username: trimmed, email: form.email.trim(), password: form.password }
-      : { username: trimmed, password: form.password };
-
     try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(body),
-      });
+      const data = isRegister
+        ? await api.register({
+            username: trimmedUsername,
+            email: form.email.trim(),
+            password: form.password,
+          })
+        : await api.login({
+            username: trimmedUsername,
+            password: form.password,
+          });
 
-      const data = (await res.json()) as { user?: User; message?: string };
-
-      if (!res.ok) {
-        setError(data.message ?? "Ошибка");
-        return;
+      onSuccess(data.user);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Ошибка сети");
       }
-
-      if (data.user) {
-        onSuccess(data.user);
-      }
-    } catch {
-      setError("Ошибка сети");
     } finally {
       setLoading(false);
     }
   };
 
   const switchMode = () => {
-    setMode((m) => (m === "login" ? "register" : "login"));
+    setMode((current) => (current === "login" ? "register" : "login"));
     setError(null);
   };
 
@@ -81,11 +76,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
         {isRegister ? "Регистрация" : "Вход"}
       </h2>
 
-      <form
-        onSubmit={handleSubmit}
-        className="mt-4 flex flex-col gap-3"
-        noValidate
-      >
+      <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3" noValidate>
         <label className="flex flex-col gap-1 text-sm text-[#535353]">
           Имя пользователя
           <input
@@ -96,7 +87,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
             autoComplete="username"
             required
             disabled={loading}
-            className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white text-[#535353] focus:outline-none focus:border-[#535353]"
+            className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white focus:outline-none focus:border-[#535353]"
           />
         </label>
 
@@ -111,7 +102,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
               autoComplete="email"
               required
               disabled={loading}
-              className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white text-[#535353] focus:outline-none focus:border-[#535353]"
+              className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white focus:outline-none focus:border-[#535353]"
             />
           </label>
         )}
@@ -126,16 +117,16 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
             autoComplete={isRegister ? "new-password" : "current-password"}
             required
             disabled={loading}
-            className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white text-[#535353] focus:outline-none focus:border-[#535353]"
+            className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white focus:outline-none focus:border-[#535353]"
           />
         </label>
 
         <button
           type="submit"
           disabled={loading}
-          className="mt-1 px-4 py-2 bg-[#535353] text-white rounded-sm font-medium hover:bg-[#404040] transition-colors"
+          className="mt-1 px-4 py-2 bg-[#535353] text-white rounded-sm font-medium hover:bg-[#404040] disabled:opacity-60 transition-colors"
         >
-          {isRegister ? "Зарегистрироваться" : "Войти"}
+          {loading ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}
         </button>
       </form>
 
@@ -151,9 +142,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
         disabled={loading}
         className="mt-4 w-full text-sm text-[#737373] hover:text-[#535353] transition-colors"
       >
-        {isRegister
-          ? "Уже есть аккаунт? Войти"
-          : "Нет аккаунта? Зарегистрироваться"}
+        {isRegister ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Зарегистрироваться"}
       </button>
     </div>
   );

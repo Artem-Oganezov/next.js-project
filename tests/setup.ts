@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
+import { RateLimit } from "@/lib/models/RateLimit";
 import { afterAll, afterEach, vi } from "vitest";
 
 const cookieJar = new Map<string, string>();
@@ -41,6 +42,7 @@ afterEach(async () => {
     for (const collection of Object.values(collections)) {
       await collection.deleteMany({});
     }
+    await RateLimit.deleteMany({});
   }
 });
 

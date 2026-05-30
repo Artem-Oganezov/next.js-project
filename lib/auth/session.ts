@@ -1,7 +1,9 @@
 import { createHash, randomBytes } from "crypto";
 import { cookies } from "next/headers";
 import type { Types } from "mongoose";
+import { SESSION_MAX_AGE_SEC } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
+import { getEnv } from "@/lib/env";
 import { Session } from "@/lib/models/Session";
 import { User, type IUser } from "@/lib/models/User";
 import type { User as PublicUser } from "@/types/dino-game.types";
@@ -17,20 +19,9 @@ export function toPublicUser(user: IUser): PublicUser {
   };
 }
 
-const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7;
-
-function getAuthSecret(): string {
-  const secret = process.env.AUTH_SECRET;
-  if (!secret) {
-    throw new Error("Please define the AUTH_SECRET environment variable");
-  }
-  return secret;
-}
-
 function hashSessionToken(token: string): string {
-  return createHash("sha256")
-    .update(`${token}${getAuthSecret()}`)
-    .digest("hex");
+  const { AUTH_SECRET } = getEnv();
+  return createHash("sha256").update(`${token}${AUTH_SECRET}`).digest("hex");
 }
 
 function generateSessionToken(): string {

@@ -28,6 +28,10 @@ export function conflict(message: string): NextResponse<ApiErrorBody> {
   return jsonError(message, 409);
 }
 
+export function tooManyRequests(message: string): NextResponse<ApiErrorBody> {
+  return jsonError(message, 429);
+}
+
 export function internalError(
   message = "Internal server error",
 ): NextResponse<ApiErrorBody> {

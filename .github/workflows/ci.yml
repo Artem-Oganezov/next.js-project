@@ -17,7 +17,7 @@ jobs:
 
     env:
       MONGODB_URI: mongodb://127.0.0.1:27017/dino
-      AUTH_SECRET: ci-build-secret-at-least-32-characters-long
+      AUTH_SECRET: ci-build-secret-at-least-32-characters-long-xx
 
     steps:
       - name: Checkout

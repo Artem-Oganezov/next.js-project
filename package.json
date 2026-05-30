@@ -1,6 +1,6 @@
 {
-  "name": "next.js-project",
-  "version": "0.1.0",
+  "name": "dino-run",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

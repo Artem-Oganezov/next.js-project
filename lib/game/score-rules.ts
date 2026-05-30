@@ -1,15 +1,4 @@
-/** Совпадает с DinoGame: currentScore += 0.15 за кадр (~60 FPS ≈ 9 очков/сек). */
-export const SCORE_PER_FRAME = 0.15;
-export const ASSUMED_FPS = 60;
-
-/** Верхняя граница очков в секунду (запас к ускорению игры). */
-export const MAX_SCORE_PER_SECOND = 18;
-
-/** Допуск на сетевую задержку и округление Math.floor. */
-export const SCORE_GRACE = 10;
-
-/** Максимальная длительность одной партии. */
-export const MAX_GAME_DURATION_MS = 20 * 60 * 1000;
+import { SCORE_VALIDATION } from "@/lib/game/constants";
 
 export type ScoreValidationResult =
   | { ok: true }
@@ -17,10 +6,14 @@ export type ScoreValidationResult =
 
 export function maxPlausibleScore(elapsedMs: number): number {
   if (elapsedMs <= 0) {
-    return SCORE_GRACE;
+    return SCORE_VALIDATION.SCORE_GRACE;
   }
+
   const elapsedSec = elapsedMs / 1000;
-  return Math.floor(elapsedSec * MAX_SCORE_PER_SECOND) + SCORE_GRACE;
+  return (
+    Math.floor(elapsedSec * SCORE_VALIDATION.MAX_SCORE_PER_SECOND) +
+    SCORE_VALIDATION.SCORE_GRACE
+  );
 }
 
 export function validateGameScore(
@@ -34,7 +27,7 @@ export function validateGameScore(
 
   const elapsedMs = now.getTime() - gameStartedAt.getTime();
 
-  if (elapsedMs > MAX_GAME_DURATION_MS) {
+  if (elapsedMs > SCORE_VALIDATION.MAX_GAME_DURATION_MS) {
     return { ok: false, message: "Игровая сессия истекла, начните заново" };
   }
 

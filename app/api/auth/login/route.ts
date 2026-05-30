@@ -1,21 +1,23 @@
 import { NextResponse } from "next/server";
-import { badRequest, internalError, unauthorized } from "@/lib/api/errors";
+import { badRequest, unauthorized } from "@/lib/api/errors";
+import { withApiHandler } from "@/lib/api/handler";
+import { parseJsonBody } from "@/lib/api/http";
 import { verifyPassword } from "@/lib/auth/password";
 import { createSession, toPublicUser } from "@/lib/auth/session";
+import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/models/User";
 import { loginSchema } from "@/lib/validation/auth";
 
-export async function POST(request: Request) {
-  try {
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return badRequest("Некорректный JSON");
+export const POST = withApiHandler(
+  "auth/login",
+  async (request) => {
+    const body = await parseJsonBody(request);
+    if (!body.ok) {
+      return body.response;
     }
 
-    const parsed = loginSchema.safeParse(body);
+    const parsed = loginSchema.safeParse(body.data);
     if (!parsed.success) {
       return badRequest(parsed.error.issues[0]?.message ?? "Некорректные данные");
     }
@@ -32,8 +34,10 @@ export async function POST(request: Request) {
     await createSession(user._id);
 
     return NextResponse.json({ user: toPublicUser(user) });
-  } catch (error) {
-    console.error("[auth/login]", error);
-    return internalError();
-  }
-}
+  },
+  {
+    keyPrefix: "auth:login",
+    maxRequests: RATE_LIMIT.AUTH_MAX_REQUESTS,
+    windowMs: RATE_LIMIT.AUTH_WINDOW_MS,
+  },
+);

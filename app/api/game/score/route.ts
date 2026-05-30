@@ -1,26 +1,28 @@
 import { NextResponse } from "next/server";
-import { badRequest, forbidden, internalError, unauthorized } from "@/lib/api/errors";
-import { validateGameScore } from "@/lib/game/score-rules";
+import { badRequest, forbidden, unauthorized } from "@/lib/api/errors";
+import { withApiHandler } from "@/lib/api/handler";
+import { parseJsonBody } from "@/lib/api/http";
 import { getSessionUser } from "@/lib/auth/session";
+import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
+import { validateGameScore } from "@/lib/game/score-rules";
 import { User } from "@/lib/models/User";
 import { scoreSchema } from "@/lib/validation/score";
 
-export async function POST(request: Request) {
-  try {
+export const POST = withApiHandler(
+  "game/score",
+  async (request) => {
     const sessionUser = await getSessionUser();
     if (!sessionUser) {
       return unauthorized();
     }
 
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return badRequest("Некорректный JSON");
+    const body = await parseJsonBody(request);
+    if (!body.ok) {
+      return body.response;
     }
 
-    const parsed = scoreSchema.safeParse(body);
+    const parsed = scoreSchema.safeParse(body.data);
     if (!parsed.success) {
       return badRequest(parsed.error.issues[0]?.message ?? "Некорректные данные");
     }
@@ -51,8 +53,10 @@ export async function POST(request: Request) {
       bestScore: user.bestScore,
       isNewRecord,
     });
-  } catch (error) {
-    console.error("[game/score]", error);
-    return internalError();
-  }
-}
+  },
+  {
+    keyPrefix: "game:score",
+    maxRequests: RATE_LIMIT.SCORE_MAX_REQUESTS,
+    windowMs: RATE_LIMIT.SCORE_WINDOW_MS,
+  },
+);

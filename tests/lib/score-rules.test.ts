@@ -1,17 +1,16 @@
 import { describe, expect, it } from "vitest";
-import {
-  maxPlausibleScore,
-  SCORE_GRACE,
-  validateGameScore,
-} from "@/lib/game/score-rules";
+import { SCORE_VALIDATION } from "@/lib/game/constants";
+import { maxPlausibleScore, validateGameScore } from "@/lib/game/score-rules";
 
 describe("maxPlausibleScore", () => {
   it("returns grace for zero elapsed time", () => {
-    expect(maxPlausibleScore(0)).toBe(SCORE_GRACE);
+    expect(maxPlausibleScore(0)).toBe(SCORE_VALIDATION.SCORE_GRACE);
   });
 
   it("scales with elapsed seconds", () => {
-    expect(maxPlausibleScore(10_000)).toBe(10 * 18 + SCORE_GRACE);
+    expect(maxPlausibleScore(10_000)).toBe(
+      10 * SCORE_VALIDATION.MAX_SCORE_PER_SECOND + SCORE_VALIDATION.SCORE_GRACE,
+    );
   });
 });
 

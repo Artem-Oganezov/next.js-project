@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
-import { internalError, unauthorized } from "@/lib/api/errors";
+import { unauthorized } from "@/lib/api/errors";
+import { withApiHandler } from "@/lib/api/handler";
 import { getSessionUser } from "@/lib/auth/session";
+import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/models/User";
 
-export async function POST() {
-  try {
+export const POST = withApiHandler(
+  "game/session/start",
+  async () => {
     const sessionUser = await getSessionUser();
     if (!sessionUser) {
       return unauthorized();
@@ -24,8 +27,10 @@ export async function POST() {
     return NextResponse.json({
       startedAt: user.activeGameStartedAt.toISOString(),
     });
-  } catch (error) {
-    console.error("[game/session/start]", error);
-    return internalError();
-  }
-}
+  },
+  {
+    keyPrefix: "game:session",
+    maxRequests: RATE_LIMIT.SCORE_MAX_REQUESTS,
+    windowMs: RATE_LIMIT.SCORE_WINDOW_MS,
+  },
+);

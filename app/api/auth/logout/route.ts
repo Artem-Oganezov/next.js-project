@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
-import { internalError } from "@/lib/api/errors";
+import { withApiHandler } from "@/lib/api/handler";
 import { destroySession } from "@/lib/auth/session";
 
-export async function POST() {
-  try {
-    await destroySession();
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error("[auth/logout]", error);
-    return internalError();
-  }
-}
+export const POST = withApiHandler("auth/logout", async () => {
+  await destroySession();
+  return NextResponse.json({ ok: true });
+});

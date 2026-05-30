@@ -31,7 +31,9 @@ beforeAll(async () => {
 });
 
 async function startGameSession(): Promise<void> {
-  const response = await sessionStartPost();
+  const response = await sessionStartPost(
+    jsonRequest("http://localhost/api/game/session/start", "POST", {}),
+  );
   expect(response.status).toBe(200);
 }
 

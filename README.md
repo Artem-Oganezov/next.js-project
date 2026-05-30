@@ -1,63 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dino Run
 
-## Getting Started
+Production-ready браузерная игра (Next.js 15, MongoDB, Vercel) с аутентификацией, серверной валидацией счёта и CI.
 
-1. Start MongoDB:
+## Features
 
-```bash
-docker compose up -d
-```
+- Регистрация и вход (bcrypt, httpOnly-сессии в MongoDB)
+- Canvas-игра с сохранением лучшего результата
+- Anti-cheat: игровая сессия + лимит очков по времени партии
+- Rate limiting на auth и game API (MongoDB TTL)
+- Health check: `GET /api/health`
+- GitHub Actions: lint, test, build
 
-2. Copy environment variables:
+## Stack
+
+- **Frontend:** Next.js App Router, React 19, Tailwind CSS 4
+- **Backend:** Route Handlers, Mongoose, Zod
+- **Database:** MongoDB Atlas (или Docker локально)
+- **Deploy:** Vercel
+
+## Quick start
+
+### 1. Environment
 
 ```bash
 cp .env.example .env.local
 ```
 
-On Windows (PowerShell): `Copy-Item .env.example .env.local`
+Windows: `Copy-Item .env.example .env.local`
 
-3. Run tests:
+| Variable | Description |
+|----------|-------------|
+| `MONGODB_URI` | MongoDB connection string |
+| `AUTH_SECRET` | Min. 32 characters for session signing |
+
+### 2. Database
+
+**Atlas (recommended for Vercel):** create cluster, user, allow `0.0.0.0/0`, paste URI into `.env.local`.
+
+**Local:**
 
 ```bash
-npm test
+docker compose up -d
+# MONGODB_URI=mongodb://127.0.0.1:27017/dino
 ```
 
-4. Run the development server:
+### 3. Run
 
 ```bash
+npm install
+npm test
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
+
+## API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/health` | Service + DB status |
+| `POST` | `/api/auth/register` | Register |
+| `POST` | `/api/auth/login` | Login |
+| `POST` | `/api/auth/logout` | Logout |
+| `GET` | `/api/auth/me` | Current user |
+| `POST` | `/api/game/session/start` | Start game session |
+| `POST` | `/api/game/score` | Submit score (validated) |
+
+## Deploy (Vercel)
+
+1. Connect GitHub repository.
+2. Set **Environment Variables** (same as `.env.local`).
+3. Redeploy after changing env.
+
+Auto-deploy runs on push to `main`.
 
 ## CI
 
-On every push and pull request to `main` / `master`, GitHub Actions runs:
+`.github/workflows/ci.yml` — `lint`, `test`, `build` on push/PR.
 
-- `npm run lint`
-- `npm test`
-- `npm run build`
+## Project structure
 
-Workflow file: `.github/workflows/ci.yml`
+```
+app/api/          # Route handlers
+components/       # UI (AuthGate, DinoGame, Spinner)
+lib/
+  api/            # Errors, handler wrapper, HTTP helpers
+  auth/           # Sessions, passwords
+  config/         # App constants
+  db/             # Mongoose connection
+  env.ts          # Validated environment
+  game/           # Game constants, score rules
+  models/         # User, Session, RateLimit
+  security/       # Rate limiting
+  validation/     # Zod schemas
+tests/            # Vitest unit + integration
+```
 
-## Score anti-cheat
+## License
 
-- `POST /api/game/session/start` — начало партии (вызывается при старте/рестарте игры).
-- `POST /api/game/score` — принимает счёт только при активной сессии и в пределах физически возможного значения за время партии.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private / portfolio use.
