@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { badRequest, internalError, unauthorized } from "@/lib/api/errors";
+import { badRequest, forbidden, internalError, unauthorized } from "@/lib/api/errors";
+import { validateGameScore } from "@/lib/game/score-rules";
 import { getSessionUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/models/User";
@@ -33,11 +34,18 @@ export async function POST(request: Request) {
       return unauthorized();
     }
 
+    const validation = validateGameScore(score, user.activeGameStartedAt);
+    if (!validation.ok) {
+      return forbidden(validation.message);
+    }
+
     const isNewRecord = score > user.bestScore;
     if (isNewRecord) {
       user.bestScore = score;
-      await user.save();
     }
+
+    user.activeGameStartedAt = null;
+    await user.save();
 
     return NextResponse.json({
       bestScore: user.bestScore,

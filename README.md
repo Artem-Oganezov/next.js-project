@@ -40,6 +40,11 @@ On every push and pull request to `main` / `master`, GitHub Actions runs:
 
 Workflow file: `.github/workflows/ci.yml`
 
+## Score anti-cheat
+
+- `POST /api/game/session/start` — начало партии (вызывается при старте/рестарте игры).
+- `POST /api/game/score` — принимает счёт только при активной сессии и в пределах физически возможного значения за время партии.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More

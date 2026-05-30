@@ -5,6 +5,7 @@ export interface IUser extends Document {
   email: string;
   passwordHash: string;
   bestScore: number;
+  activeGameStartedAt: Date | null;
 }
 
 const userSchema = new Schema<IUser>(
@@ -29,6 +30,10 @@ const userSchema = new Schema<IUser>(
     bestScore: {
       type: Number,
       default: 0,
+    },
+    activeGameStartedAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true },

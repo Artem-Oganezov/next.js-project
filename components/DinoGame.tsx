@@ -67,6 +67,13 @@ export default function DinoGame({
     let nextCactusGap = 90; // через сколько кадров появится следующий кактус
     let animationFrameId = 0; // id кадра для отмены requestAnimationFrame
 
+    const startGameSession = () => {
+      fetch("/api/game/session/start", {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => {});
+    };
+
     // Сброс игры в начальное состояние (старт и рестарт)
     const resetGame = () => {
       dino = { y: GROUND_Y - DINO_HEIGHT, velocityY: 0 };
@@ -78,6 +85,7 @@ export default function DinoGame({
       nextCactusGap = 80 + Math.floor(Math.random() * 60); // случайный интервал 80–140 кадров
       setScore(0);
       setGameOver(false);
+      startGameSession();
     };
 
     // Создать новый кактус у правого края экрана
