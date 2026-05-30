@@ -24,7 +24,6 @@ export function clearTestCookies(): void {
 }
 
 process.env.AUTH_SECRET = "vitest-auth-secret-at-least-32-chars";
-process.env.NODE_ENV = "test";
 
 const mongoServer = await MongoMemoryServer.create();
 process.env.MONGODB_URI = mongoServer.getUri();
