@@ -1,8 +1,10 @@
-// Директива Next.js: компонент работает только в браузере (Canvas, клавиатура, localStorage)
+// Директива Next.js: компонент работает только в браузере (Canvas, клавиатура)
 "use client";
 
 // Хуки React: эффекты, ссылка на canvas, состояние для счёта на экране
 import { useEffect, useRef, useState } from "react";
+// Типы игры вынесены в отдельный файл
+import type { Cactus, DinoState } from "@/types/dino-game.types";
 
 // --- Константы игры (не меняются во время игры) ---
 
@@ -15,37 +17,32 @@ const DINO_X = 50; // фиксированная позиция динозавр
 const DINO_WIDTH = 44; // ширина прямоугольника динозавра
 const DINO_HEIGHT = 47; // высота прямоугольника динозавра
 const BASE_SPEED = 5; // начальная скорость движения кактусов влево
-const STORAGE_KEY = "dino-high-score"; // ключ для сохранения рекорда в localStorage
 
-// Тип одного кактуса-препятствия
-type Cactus = {
-  x: number; // позиция по X (справа появляется, уходит влево)
-  width: number; // ширина кактуса
-  height: number; // высота кактуса
+type DinoGameProps = {
+  initialBestScore?: number;
+  onBestScoreUpdate?: (bestScore: number) => void;
 };
 
-// Тип состояния динозавра
-type DinoState = {
-  y: number; // текущая позиция по вертикали
-  velocityY: number; // вертикальная скорость (прыжок / падение)
-};
-
-export default function DinoGame() {
+export default function DinoGame({
+  initialBestScore = 0,
+  onBestScoreUpdate,
+}: DinoGameProps) {
   // Ссылка на элемент <canvas> в DOM — через неё рисуем игру
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Текущий счёт и рекорд — показываем в React-разметке над canvas
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
+  const [highScore, setHighScore] = useState(initialBestScore);
   const [gameOver, setGameOver] = useState(false);
+  const onBestScoreUpdateRef = useRef(onBestScoreUpdate);
 
-  // При первой загрузке читаем рекорд из localStorage браузера
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY); // строка или null
-    if (saved !== null) {
-      setHighScore(parseInt(saved, 10)); // превращаем строку в число
-    }
-  }, []);
+    setHighScore(initialBestScore);
+  }, [initialBestScore]);
+
+  useEffect(() => {
+    onBestScoreUpdateRef.current = onBestScoreUpdate;
+  }, [onBestScoreUpdate]);
 
   // Главный эффект: запуск игрового цикла один раз после монтирования компонента
   useEffect(() => {
@@ -164,13 +161,19 @@ export default function DinoGame() {
           isGameOver = true;
           setGameOver(true);
 
-          // Сохраняем рекорд, если побили прошлый результат
-          const saved = localStorage.getItem(STORAGE_KEY);
-          const prevBest = saved ? parseInt(saved, 10) : 0;
-          if (displayScore > prevBest) {
-            localStorage.setItem(STORAGE_KEY, String(displayScore));
-            setHighScore(displayScore);
-          }
+          fetch("/api/game/score", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ score: displayScore }),
+          })
+            .then(async (res) => {
+              if (!res.ok) return;
+              const data = (await res.json()) as { bestScore: number };
+              setHighScore(data.bestScore);
+              onBestScoreUpdateRef.current?.(data.bestScore);
+            })
+            .catch(() => {});
           break;
         }
       }
