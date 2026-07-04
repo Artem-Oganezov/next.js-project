@@ -6,6 +6,7 @@ import { parseJsonBody } from "@/lib/api/http";
 import { connectDB } from "@/lib/db/mongoose";
 import { Session } from "@/lib/models/Session";
 import { User } from "@/lib/models/User";
+import { msg } from "@/lib/i18n/messages";
 import { z } from "zod";
 
 const banBodySchema = z.object({
@@ -27,7 +28,7 @@ function adminUserHandler(scope: string, action: "ban" | "unban", userId: string
 
       const parsed = banBodySchema.safeParse(body.data ?? {});
       if (!parsed.success) {
-        return badRequest(parsed.error.issues[0]?.message ?? "Некорректные данные");
+        return badRequest(parsed.error.issues[0]?.message ?? msg.common.invalidPayload);
       }
 
       const user = await User.findByIdAndUpdate(

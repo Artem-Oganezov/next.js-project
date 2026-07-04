@@ -31,7 +31,7 @@ export async function apiFetch<T>(
   const data = (await response.json()) as T & { message?: string };
 
   if (!response.ok) {
-    throw new ApiError(response.status, data.message ?? "Ошибка запроса");
+    throw new ApiError(response.status, data.message ?? "Request failed");
   }
 
   return data;
@@ -50,6 +50,22 @@ export const api = {
       json: body,
     }),
   logout: () => apiFetch<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
+  forgotPassword: (email: string) =>
+    apiFetch<{ message: string }>("/api/auth/forgot-password", {
+      method: "POST",
+      json: { email },
+    }),
+  resetPassword: (body: { token: string; password: string }) =>
+    apiFetch<{ ok: boolean }>("/api/auth/reset-password", {
+      method: "POST",
+      json: body,
+    }),
+  resendVerification: () =>
+    apiFetch<{ ok: boolean }>("/api/auth/resend-verification", { method: "POST" }),
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    apiFetch<{ ok: boolean }>("/api/auth/password", { method: "PUT", json: body }),
+  deleteAccount: (body: { password: string }) =>
+    apiFetch<{ ok: boolean }>("/api/auth/account", { method: "DELETE", json: body }),
   startGameSession: () =>
     apiFetch<{ sessionId: string; seed: string; startedAt: string }>(
       "/api/game/session/start",
@@ -68,4 +84,14 @@ export const api = {
     }),
   getLeaderboardRank: () =>
     apiFetch<{ rank: number; nextUsername: string | null }>("/api/leaderboard/rank"),
+  unlockSkin: (skinId: string) =>
+    apiFetch<{ totalScore: number; unlockedSkins: string[] }>("/api/skins", {
+      method: "POST",
+      json: { skinId },
+    }),
+  equipSkin: (skinId: string) =>
+    apiFetch<{ activeSkin: string }>("/api/skins", {
+      method: "PUT",
+      json: { skinId },
+    }),
 };

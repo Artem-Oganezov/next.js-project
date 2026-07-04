@@ -1,208 +1,174 @@
 # Game Backend Template (+ Dino Run)
 
-Универсальный бэкенд для браузерных игр «счёт → рекорд → рейтинг» на Next.js.
-Текущая игра — Dino Run; чтобы запустить другую, меняется **папка `game/`
-и один файл правил** — auth, лидерборд, античит-оболочка и rate limiting общие.
+Universal backend for browser games built around **score → personal best → leaderboard** on Next.js.
+The bundled game is Dino Run; to ship another title, swap the **`game/` folder** and
+**one plugin file** — auth, leaderboard, anti-cheat shell, and rate limiting stay the same.
 
-Принцип: **1 проект = 1 игра**. Новая игра — новый форк (см.
-[docs/NEW_GAME.md](docs/NEW_GAME.md), чеклист на ~2 часа).
+Principle: **1 repo = 1 game**. A new game is a new fork (see
+[docs/NEW_GAME.md](docs/NEW_GAME.md), ~2 hour checklist).
 
-Документация: [Новая игра](docs/NEW_GAME.md) ·
-[Деплой](docs/DEPLOY.md) · [Архитектура](docs/ARCHITECTURE.md) ·
+Docs: [New game](docs/NEW_GAME.md) · [Deploy](docs/DEPLOY.md) ·
+[VPS + HTTPS](docs/VPS-DEPLOY.md) · [Architecture](docs/ARCHITECTURE.md) ·
 [Changelog](CHANGELOG.md)
 
 ## Features
 
-- Регистрация и вход (bcrypt, httpOnly-сессии в MongoDB; кап одновременных
-  сессий на юзера — старейшие вытесняются)
-- Лидерборд топ-10 и позиция игрока в общем рейтинге (Redis ZSET, O(log N))
-- Anti-cheat: одноразовые сессии + серверная **replay-валидация** — сервер
-  прогоняет партию по seed и логу прыжков и сверяет счёт (см. ниже)
-- Rate limiting в Redis по IP и по userId (по умолчанию fail-open;
-  `RATE_LIMIT_FAIL_CLOSED=true` — жёсткий режим 429 при падении Redis)
-- Health check `GET /api/health` (Mongo + Redis + сводка метрик) — для LB
-- Метрики `GET /api/metrics` (Prometheus text / JSON) для мониторинга
-- Админка `/admin` + API: журнал подозрительных сабмитов, бан пользователей
-- Stateless API: готов к нескольким серверам за load balancer
-- Docker (standalone build), GitHub Actions: format, lint, unit/integration,
-  Redis-тесты, E2E (Playwright), build
+- Registration and login (bcrypt, httpOnly sessions in MongoDB; concurrent session cap per user)
+- Top-10 leaderboard and player rank (Redis ZSET, O(log N))
+- Anti-cheat: one-time sessions + server-side **replay validation** — the server replays the run from seed + input log and verifies the score (see below)
+- Rate limiting in Redis by IP and userId (fail-open by default; `RATE_LIMIT_FAIL_CLOSED=true` for strict 429 when Redis is down)
+- Health check `GET /api/health` (Mongo + Redis + metrics summary) — for load balancers
+- Metrics `GET /api/metrics` (Prometheus text / JSON)
+- Admin panel `/admin` + API: suspicious submit log, user ban/unban
+- Account management: password reset, email verification, change password, delete account
+- Security: CSP + Origin check middleware, timing-safe admin secret, atomic Redis rate limits
+- Stateless API: ready for multiple app servers behind a load balancer
+- Docker (standalone build), GitHub Actions: format, lint, unit/integration, Redis tests, E2E (Playwright), build
 
 ## Stack
 
 - **Frontend:** Next.js App Router, React 19, Tailwind CSS 4, canvas
 - **Backend:** Route Handlers, Mongoose, Zod
-- **Data:** MongoDB (source of truth) + Redis (hot path: рейтинг, rate limit)
-- **Deploy:** Docker на VPS (или Vercel + Upstash)
+- **Data:** MongoDB (source of truth) + Redis (hot path: rank, rate limit)
+- **Deploy:** Docker on VPS (recommended) or Vercel + Upstash
 
-## Quick start (локально)
+## Quick start (local)
 
 ```bash
 cp .env.example .env.local          # Windows: Copy-Item .env.example .env.local
-docker compose -f docker-compose.dev.yml up -d   # Mongo + Redis локально
+docker compose -f docker-compose.dev.yml up -d   # local Mongo + Redis
 npm install
 npm test
 npm run dev
 ```
 
-`.env.local` для локального запуска:
+`.env.local` for local dev:
 
 ```env
 MONGODB_URI=mongodb://127.0.0.1:27017/game
 REDIS_URL=redis://127.0.0.1:6379
 AUTH_SECRET=<openssl rand -base64 32>
-ADMIN_SECRET=<openssl rand -base64 32>   # опционально: /admin и /api/metrics
+ADMIN_SECRET=<openssl rand -base64 32>   # optional: /admin and /api/metrics
+APP_URL=http://localhost:3000            # email links (optional without SMTP)
 ```
 
-## Как запустить НОВУЮ игру на этом бэке
+## How to ship a NEW game on this backend
 
-Подробный чеклист: [docs/NEW_GAME.md](docs/NEW_GAME.md). Кратко:
+Full checklist: [docs/NEW_GAME.md](docs/NEW_GAME.md). In short:
 
-1. **Форкни/скопируй репозиторий.**
-2. **`game/meta.ts`** — id, название, feature-флаги (напр. `skins: false`).
-3. **`lib/game/plugin.ts`** — единственная game-specific точка бэка:
+1. **Fork/copy the repo.**
+2. **`game/meta.ts`** — id, display name, feature flags (e.g. `skins: false`).
+3. **`lib/game/plugin.ts`** — the only game-specific backend file:
 
    ```ts
    const scoreRules: ScoreRulesConfig = {
-     maxScorePerSecond: 2, // Flappy: ~1 труба/сек, ×2 запас
+     maxScorePerSecond: 2,
      scoreGrace: 3,
      maxGameDurationMs: 10 * 60 * 1000,
      minGameDurationMs: 1000,
    };
    ```
 
-4. **Замени папку `game/`** (canvas-компонент `Game.tsx`, константы, типы,
-   скины). Контракт клиента (`game/contract.ts`) не меняется:
-   - `POST /api/game/session/start` — перед началом партии; в ответе
-     `sessionId` и `seed` (партия ведётся детерминированным движком от
-     seed — см. `game/engine.ts`)
-   - `POST /api/game/score { score, sessionId, jumpTicks }` — в ответе
-     `bestScore`, `isNewRecord`, `rank`, `nextUsername`; `jumpTicks` — лог
-     ввода для серверной replay-валидации (для игры без детерминированного
-     движка убери `validateReplay` из `lib/game/plugin.ts`)
-5. Новый `.env` (своя БД) — и деплой. Роуты, auth, лидерборд, shell-экраны
-   не трогаешь.
+4. **Replace the `game/` folder** (canvas `Game.tsx`, constants, types, skins). Client contract (`game/contract.ts`) stays the same:
+   - `POST /api/game/session/start` — before a run; returns `sessionId` and `seed`
+   - `POST /api/game/score { score, sessionId, inputLog }` — returns `bestScore`, `isNewRecord`, `rank`, `nextUsername`; `inputLog` is the input record for server replay validation (remove `validateReplay` from the plugin if your game is not deterministic)
+5. New `.env` (separate DB) and deploy. Routes, auth, leaderboard, and shell screens stay untouched.
 
 ## Anti-cheat
 
-Оболочка общая для любой игры, пороги — в `lib/game/plugin.ts`:
+The shell is game-agnostic; thresholds live in `lib/game/plugin.ts`:
 
-1. **Одноразовая партия.** `session/start` создаёт `GameSession` (Mongo, TTL);
-   счёт принимается только с валидным `sessionId`, повторный submit
-   отклоняется атомарно (`findOneAndUpdate`), гонка двух запросов невозможна.
-   Новый `session/start` аннулирует незакрытые партии юзера.
-2. **Время партии.** Мин. и макс. длительность + лимит очков в секунду
-   (`maxScorePerSecond`) — мгновенные и «бесконечные» результаты режутся.
-3. **Replay-валидация.** Игра детерминирована: фиксированный шаг 60 тиков/сек
-   (`game/engine.ts`), препятствия из серверного seed. Клиент отправляет
-   лог прыжков (`jumpTicks`), сервер прогоняет ту же партию и сверяет счёт
-   **бит-в-бит** — выдуманный счёт без реального прохождения не пройдёт.
-4. **Rate limit по userId** на игровых эндпоинтах (не только по IP).
-5. **Лог подозрительных сабмитов** — `scope: "anti-cheat"` в stderr
-   (username, score, причина, elapsedMs) для мониторинга и банов.
+1. **One-time run.** `session/start` creates a `GameSession` (Mongo, TTL); scores are accepted only with a valid `sessionId`. Resubmit is rejected atomically.
+2. **Run duration.** Min/max duration + score-per-second cap (`maxScorePerSecond`).
+3. **Replay validation.** For deterministic games: fixed 60 ticks/sec engine, obstacles from server seed. Client sends `inputLog`, server replays and compares score bit-for-bit.
+4. **Rate limit by userId** on game endpoints (not only IP).
+5. **Suspicious submit log** — stderr + MongoDB for monitoring and bans.
 
-Оставшаяся граница: replay доказывает, что партия _сыграна по правилам_,
-но не что её играл человек — бот, честно проходящий игру, неотличим от
-игрока (это уже задача поведенческого анализа, не движка).
+Remaining boundary: replay proves the run followed game rules, not that a human played it.
 
 ## API
 
-| Method     | Path                      | Description                                       |
-| ---------- | ------------------------- | ------------------------------------------------- |
-| `GET`      | `/api/health`             | Статус Mongo + Redis + observability summary    |
-| `GET`      | `/api/metrics`            | Prometheus / JSON метрики (см. README)         |
-| `POST`     | `/api/auth/register`      | Регистрация                                       |
-| `POST`     | `/api/auth/login`         | Вход                                              |
-| `POST`     | `/api/auth/logout`        | Выход                                             |
-| `GET`      | `/api/auth/me`            | Текущий юзер                                      |
-| `POST`     | `/api/game/session/start` | Старт партии → `sessionId` + `seed`               |
-| `POST`     | `/api/game/score`         | `{ score, sessionId, jumpTicks }` → рекорд + rank |
-| `GET`      | `/api/leaderboard`        | Топ-10 (кэш 60с в Redis)                          |
-| `GET`      | `/api/leaderboard/rank`   | Позиция текущего юзера                            |
-| `POST/PUT` | `/api/skins`              | Покупка / выбор скина                             |
+| Method       | Path                              | Description                                      |
+| ------------ | --------------------------------- | ------------------------------------------------ |
+| `GET`        | `/api/health`                     | Mongo + Redis + observability summary            |
+| `GET`        | `/api/metrics`                    | Prometheus / JSON metrics                          |
+| `POST`       | `/api/auth/register`              | Register                                         |
+| `POST`       | `/api/auth/login`                 | Log in                                           |
+| `POST`       | `/api/auth/logout`                | Log out                                          |
+| `GET`        | `/api/auth/me`                    | Current user                                     |
+| `POST`       | `/api/auth/forgot-password`       | Send password reset email                          |
+| `POST`       | `/api/auth/reset-password`        | Reset password with token                        |
+| `POST`       | `/api/auth/resend-verification`   | Resend email verification (authenticated)        |
+| `GET`        | `/api/auth/verify-email`          | Verify email with token                          |
+| `PUT`        | `/api/auth/password`              | Change password (authenticated)                  |
+| `DELETE`     | `/api/auth/account`               | Delete account (authenticated)                   |
+| `POST`       | `/api/game/session/start`         | Start run → `sessionId` + `seed`                   |
+| `POST`       | `/api/game/score`                 | `{ score, sessionId, inputLog }` → best + rank   |
+| `GET`        | `/api/leaderboard`                | Top 10 (60s Redis cache)                         |
+| `GET`        | `/api/leaderboard/rank`           | Current user rank                                |
+| `POST`/`PUT` | `/api/skins`                      | Unlock / equip skin                              |
 
-## Deploy на VPS (Docker)
+## Deploy on VPS (Docker)
+
+See [docs/VPS-DEPLOY.md](docs/VPS-DEPLOY.md) for HTTPS, nginx, and `TRUST_PROXY`.
 
 ```bash
-# на сервере
 git clone <repo> && cd <repo>
-cp .env.example .env    # прописать MONGODB_URI (Atlas!), AUTH_SECRET, REDIS_URL
+cp .env.example .env    # MONGODB_URI (Atlas!), AUTH_SECRET, REDIS_URL, APP_URL
 docker compose up -d --build
 ```
 
-- **Mongo — снаружи** (Atlas / отдельный сервер), не на app-ноде.
-- Redis поднимается в compose рядом с app; для нескольких серверов вынеси
-  его на отдельный хост и поменяй `REDIS_URL`.
+- **Mongo outside** the app node (Atlas / dedicated server).
+- Redis runs in compose next to the app; for multiple servers, host Redis separately and update `REDIS_URL`.
 
-### Масштабирование «подключил сервер»
+### Horizontal scaling
 
-1. Redis и Mongo — общие, вынесены с app-нод.
-2. Новый VPS: тот же image + **тот же `.env`** (одинаковый `AUTH_SECRET`!).
-3. Добавь сервер в upstream балансировщика — `nginx.example.conf`.
+1. Shared Redis and Mongo, off the app nodes.
+2. New VPS: same image + **same `.env`** (identical `AUTH_SECRET`).
+3. Add the server to the load balancer upstream — see `nginx.example.conf`.
 
-API stateless, sticky sessions не нужны. `GET /api/health` возвращает 503
-при падении Mongo — LB сам выведет ноду из ротации.
+API is stateless; sticky sessions are not required. `GET /api/health` returns 503 when Mongo is down so the LB can drain the node.
 
-## Тесты и CI
+## Tests and CI
 
 ```bash
 npm test              # vitest: unit + integration (mongodb-memory-server)
-npm run test:redis    # Redis-ветка (нужен redis://127.0.0.1:6379)
-npm run test:e2e      # Playwright (нужны Mongo + Redis + build/start)
+npm run test:redis    # Redis branch (needs redis://127.0.0.1:6379)
+npm run test:e2e      # Playwright (Mongo + Redis + build/start)
 npm run lint
 npm run format:check
+npm run build
 ```
 
-В основных тестах Redis намеренно недоступен — проверяется Mongo fallback.
-Отдельный конфиг `vitest.redis.config.ts` гоняет ZSET, кэш топ-10 и rate limit
-на реальном Redis (в CI — service container).
+`.github/workflows/ci.yml` — format, lint, unit/integration, Redis tests, build, E2E.
 
-`.github/workflows/ci.yml` — format, lint, unit/integration, Redis-тесты,
-build, E2E (Mongo + Redis + Playwright).
+## Admin and moderation
 
-## Админка и модерация
+1. Set `ADMIN_SECRET` (≥32 chars) in `.env`.
+2. Open `/admin`, enter the secret — view anti-cheat submit log from MongoDB.
+3. API: `GET /api/admin/submissions`, `POST/DELETE /api/admin/users/:id/ban` with header `X-Admin-Secret`.
 
-1. Задай `ADMIN_SECRET` (≥32 символа) в `.env`.
-2. Открой `/admin`, введи секрет — увидишь журнал anti-cheat сабмитов из MongoDB.
-3. API: `GET /api/admin/submissions`, `POST/DELETE /api/admin/users/:id/ban`
-   с заголовком `X-Admin-Secret`.
-
-Забаненный пользователь не может войти; активные сессии сбрасываются.
+Banned users cannot log in; active sessions are cleared.
 
 ## Project structure
 
 ```
-app/api/           # Route handlers (универсальные, игру не знают)
-components/        # Shell UI: AuthGate, экраны (игру не знают)
-game/              # ВСЯ игра — меняется под новую игру целиком
-  Game.tsx           # Canvas-компонент (рендер + ввод)
-  engine.ts          # Детерминированный движок (fixed timestep, replay)
-  contract.ts        # Контракт shell ↔ игра (GameComponentProps)
-  meta.ts            # id, название, feature-флаги
-  constants.ts       # Константы канваса и физики
-  types.ts           # Игровые типы (препятствия, состояние)
-  skins.ts           # Скины (опционально, features.skins)
+app/api/           # Route handlers (universal, game-agnostic)
+components/        # Shell UI: AuthGate, screens (game-agnostic)
+game/              # Entire game — replace wholesale for a new title
+  Game.tsx           # Canvas component (render + input)
+  engine.ts          # Deterministic engine (fixed timestep, replay)
+  contract.ts        # Shell ↔ game contract (GameComponentProps)
+  meta.ts            # id, name, feature flags
 lib/
-  api/             # Errors, handler wrapper (requestId), HTTP helpers
-  auth/            # Sessions, passwords
-  cache/           # Redis-слой: топ-10, ZSET рейтинга
-  db/              # Mongoose connection
-  game/
-    plugin.ts        # ЕДИНСТВЕННАЯ game-specific точка бэка
-    score-rules.ts   # Общий движок валидации счёта
-    rank.ts          # Ранг: Redis ZSET + Mongo fallback
-    seeded-random.ts # Детерминированный PRNG из серверного seed
-  models/            # User, Session, GameSession
-  redis.ts         # RedisClient: REDIS_URL (TCP) или Upstash REST
-  observability/   # In-process метрики (Prometheus)
-  security/        # Rate limiting, anti-cheat persist
-  admin/           # Проверка ADMIN_SECRET
-  validation/      # Zod schemas
-types/user.ts      # Общий тип User (не зависит от игры)
+  game/plugin.ts     # ONLY game-specific backend file
+  i18n/messages.ts   # API strings (English)
+  i18n/ui.ts         # Client UI strings (English)
+types/user.ts      # Shared User type
 tests/             # Vitest + Playwright e2e/
-e2e/               # Playwright: auth, game flow
-docs/              # NEW_GAME, DEPLOY, ARCHITECTURE
+docs/              # NEW_GAME, DEPLOY, VPS-DEPLOY, ARCHITECTURE
 ```
 
 ## License
 
-Proprietary — см. [LICENSE](LICENSE).
+Proprietary — see [LICENSE](LICENSE).

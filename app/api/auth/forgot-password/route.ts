@@ -6,6 +6,7 @@ import { sendPasswordResetEmail } from "@/lib/auth/mail";
 import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/models/User";
+import { msg } from "@/lib/i18n/messages";
 import { forgotPasswordSchema } from "@/lib/validation/auth";
 
 const GENERIC_MESSAGE =
@@ -21,7 +22,7 @@ export const POST = withApiHandler(
 
     const parsed = forgotPasswordSchema.safeParse(body.data);
     if (!parsed.success) {
-      return badRequest(parsed.error.issues[0]?.message ?? "Некорректные данные");
+      return badRequest(parsed.error.issues[0]?.message ?? msg.common.invalidPayload);
     }
 
     await connectDB();

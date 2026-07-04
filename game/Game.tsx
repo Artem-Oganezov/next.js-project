@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/client/api";
+import { ui } from "@/lib/i18n/ui";
 import type { GameComponentProps } from "@/game/contract";
 import { GAME_CONFIG } from "@/game/constants";
 import { createDinoEngine, TICKS_PER_SECOND, type DinoEngine } from "@/game/engine";
@@ -77,7 +78,7 @@ export default function Game({
           if (requestGeneration !== generation) return;
           // Офлайн-партия на локальном seed: играть можно, счёт не сохранится.
           engine = createDinoEngine(Math.random().toString(36).slice(2));
-          setSaveError("Не удалось начать партию на сервере — результат не сохранится");
+          setSaveError(ui.game.sessionStartFailed);
         });
     };
 
@@ -98,7 +99,7 @@ export default function Game({
 
     const submitScore = (displayScore: number, ticks: number[]) => {
       if (!gameSessionId) {
-        setSaveError("Партия не была зарегистрирована — результат не сохранён");
+        setSaveError(ui.game.sessionMissing);
         return;
       }
       void api
@@ -112,7 +113,7 @@ export default function Game({
           setRankInfo({ rank: data.rank, nextUsername: data.nextUsername });
         })
         .catch(() => {
-          setSaveError("Не удалось сохранить результат — проверьте соединение");
+          setSaveError(ui.game.saveFailed);
         });
     };
 
@@ -221,7 +222,7 @@ export default function Game({
           onClick={onBack}
           className="self-start px-3 py-1 text-sm border border-[#d0d0d0] rounded-sm text-[#535353] hover:bg-[#f0f0f0] transition-colors"
         >
-          Назад
+          {ui.common.back}
         </button>
       )}
 
@@ -229,13 +230,15 @@ export default function Game({
         <h1 className="text-2xl font-bold text-[#535353] tracking-tight">
           {gameMeta.displayName}
         </h1>
-        <p className="text-sm text-[#737373] mt-1">Пробел или ↑ — прыжок</p>
+        <p className="text-sm text-[#737373] mt-1">{ui.game.spaceJump}</p>
       </div>
 
       <div className="flex gap-8 font-mono text-lg text-[#535353]">
-        <span>Очки: {score}</span>
-        <span>Рекорд: {highScore}</span>
-        {gameOver && <span className="text-red-600 text-sm self-center">Проигрыш</span>}
+        <span>{ui.game.score}: {score}</span>
+        <span>{ui.game.best}: {highScore}</span>
+        {gameOver && (
+          <span className="text-red-600 text-sm self-center">{ui.game.gameOver}</span>
+        )}
       </div>
 
       <div className="relative">
@@ -246,7 +249,7 @@ export default function Game({
           data-testid="game-canvas"
           className="border-2 border-[#d0d0d0] rounded-sm shadow-sm bg-[#f7f7f7]"
           tabIndex={0}
-          aria-label={`Игра ${gameMeta.displayName}`}
+          aria-label={ui.game.ariaLabel(gameMeta.displayName)}
         />
 
         {gameOver && (
@@ -255,17 +258,16 @@ export default function Game({
             data-testid="game-over-modal"
           >
             <div className="flex flex-col items-center gap-4 px-8 py-6 bg-white border-2 border-[#d0d0d0] rounded-sm shadow-sm">
-              <h2 className="text-xl font-bold text-[#535353]">Игра окончена</h2>
+              <h2 className="text-xl font-bold text-[#535353]">{ui.game.gameOver}</h2>
 
               <div className="flex gap-6 font-mono text-[#535353]">
-                <span>Очки: {score}</span>
-                <span>Рекорд: {highScore}</span>
+                <span>{ui.game.score}: {score}</span>
+                <span>{ui.game.best}: {highScore}</span>
               </div>
 
               {rankInfo && (
                 <p className="text-sm text-[#737373]">
-                  Место #{rankInfo.rank}
-                  {rankInfo.nextUsername && <> — обгони {rankInfo.nextUsername}!</>}
+                  {ui.game.rankLine(rankInfo.rank, rankInfo.nextUsername)}
                 </p>
               )}
 
@@ -281,7 +283,7 @@ export default function Game({
                   onClick={() => resetGameRef.current?.()}
                   className="px-4 py-2 text-sm font-medium border border-[#535353] rounded-sm text-white bg-[#535353] hover:bg-[#3d3d3d] transition-colors"
                 >
-                  Начать заново
+                  {ui.game.playAgain}
                 </button>
                 {onBack && (
                   <button
@@ -289,7 +291,7 @@ export default function Game({
                     onClick={onBack}
                     className="px-4 py-2 text-sm border border-[#d0d0d0] rounded-sm text-[#535353] hover:bg-[#f0f0f0] transition-colors"
                   >
-                    Назад
+                    {ui.common.back}
                   </button>
                 )}
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ui } from "@/lib/i18n/ui";
 
 type LeaderboardEntry = {
   username: string;
@@ -63,21 +64,21 @@ export default function LeaderboardScreen({
           onClick={onBack}
           className="px-3 py-1.5 text-sm border border-[#d0d0d0] rounded-sm text-[#535353] hover:bg-[#f0f0f0] transition-colors"
         >
-          Назад
+          {ui.common.back}
         </button>
-        <h1 className="text-lg font-medium text-[#535353]">Рейтинг</h1>
+        <h1 className="text-lg font-medium text-[#535353]">{ui.leaderboard.title}</h1>
         <span className="w-[60px]" aria-hidden />
       </header>
 
       <div className="w-full">
-        {loading && <p className="text-sm text-[#737373] text-center">Загрузка...</p>}
+        {loading && (
+          <p className="text-sm text-[#737373] text-center">{ui.common.loading}</p>
+        )}
         {error && (
-          <p className="text-sm text-[#737373] text-center">
-            Не удалось загрузить рейтинг
-          </p>
+          <p className="text-sm text-[#737373] text-center">{ui.leaderboard.loadFailed}</p>
         )}
         {!loading && !error && leaderboard.length === 0 && (
-          <p className="text-sm text-[#737373] text-center">Пока нет результатов</p>
+          <p className="text-sm text-[#737373] text-center">{ui.leaderboard.empty}</p>
         )}
         {!loading && !error && leaderboard.length > 0 && (
           <ul className="w-full space-y-1">

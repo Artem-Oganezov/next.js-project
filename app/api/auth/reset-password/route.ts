@@ -8,6 +8,7 @@ import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { Session } from "@/lib/models/Session";
 import { User } from "@/lib/models/User";
+import { msg } from "@/lib/i18n/messages";
 import { resetPasswordSchema } from "@/lib/validation/auth";
 
 export const POST = withApiHandler(
@@ -20,7 +21,7 @@ export const POST = withApiHandler(
 
     const parsed = resetPasswordSchema.safeParse(body.data);
     if (!parsed.success) {
-      return badRequest(parsed.error.issues[0]?.message ?? "Некорректные данные");
+      return badRequest(parsed.error.issues[0]?.message ?? msg.common.invalidPayload);
     }
 
     const userId = await consumeAuthToken(parsed.data.token, "password-reset");

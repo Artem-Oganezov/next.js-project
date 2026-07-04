@@ -1,6 +1,23 @@
 # Changelog
 
-Формат: [Keep a Changelog](https://keepachangelog.com/), версии — [SemVer](https://semver.org/).
+Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
+
+## [1.5.0] — 2026-07-05
+
+### Added
+- **Universal game contract:** `inputLog` replaces `jumpTicks`; `scoreOrder: "desc" | "asc"` for time-attack games.
+- **Account auth flows:** forgot/reset password, email verification, change password, delete account (`/api/auth/*`).
+- **Email layer:** nodemailer + token model; optional SMTP via env (`APP_URL`, `SMTP_*`).
+- **Security hardening:** CSP + Origin middleware, timing-safe admin compare, dummy bcrypt on failed login, `TRUST_PROXY` for client IP behind nginx.
+- **Reliability:** atomic Redis `INCR+EXPIRE` rate limits; Mongo connection cache reset; atomic score/skin updates (`$inc`, pipeline updates).
+- **English localization:** API messages (`lib/i18n/messages.ts`), client UI (`lib/i18n/ui.ts`), English README and [docs/VPS-DEPLOY.md](docs/VPS-DEPLOY.md).
+- **Profile UI:** email verification banner, change password, delete account.
+- Tests: plugin contract (10), extended auth (4) — **80 tests** total.
+
+### Changed
+- Score submit body: `{ score, sessionId, inputLog }`.
+- Validation and error messages moved to English.
+- Version bumped to **1.5.0**.
 
 ## [1.4.0] — 2026-07-04
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SKINS, gameMeta } from "@/game";
+import { ui } from "@/lib/i18n/ui";
 
 type LeaderboardEntry = {
   username: string;
@@ -92,7 +93,7 @@ export default function HomeScreen({
         }
       } catch {
         if (!cancelled) {
-          setSkinError("Не удалось загрузить скины");
+          setSkinError(ui.profile.loadSkinsFailed);
         }
       }
     }
@@ -122,7 +123,7 @@ export default function HomeScreen({
           message?: string;
         };
         if (!response.ok) {
-          throw new Error(data.message ?? "Не удалось выбрать скин");
+          throw new Error(data.message ?? ui.profile.equipSkinFailed);
         }
         const nextActiveSkin = data.activeSkin ?? "default";
         setActiveSkin(nextActiveSkin);
@@ -139,7 +140,7 @@ export default function HomeScreen({
           message?: string;
         };
         if (!response.ok) {
-          throw new Error(data.message ?? "Не удалось купить скин");
+          throw new Error(data.message ?? ui.profile.buySkinFailed);
         }
         const nextTotalScore = data.totalScore ?? 0;
         const nextUnlockedSkins = data.unlockedSkins ?? ["default"];
@@ -151,7 +152,7 @@ export default function HomeScreen({
         });
       }
     } catch (err) {
-      setSkinError(err instanceof Error ? err.message : "Ошибка");
+      setSkinError(err instanceof Error ? err.message : ui.common.error);
     }
   }
 
@@ -197,7 +198,7 @@ export default function HomeScreen({
     >
       <header className="flex flex-col items-center gap-1 text-center">
         <span className="text-lg font-medium text-[#535353]">{username}</span>
-        <span className="text-sm text-[#737373]">Рекорд: {bestScore}</span>
+        <span className="text-sm text-[#737373]">{ui.home.bestScore}: {bestScore}</span>
       </header>
 
       <button
@@ -206,15 +207,15 @@ export default function HomeScreen({
         data-testid="start-game-btn"
         className="w-full px-4 py-3 bg-[#535353] text-white rounded-sm font-medium hover:bg-[#404040] transition-colors"
       >
-        Старт игры
+        {ui.home.startGame}
       </button>
 
       <div className="w-full space-y-3 text-center">
         <div className="w-full">
-          <p className="text-sm font-medium text-[#535353] mb-2">Лидерборд</p>
-          {leaderboardLoading && <p className="text-sm text-[#737373]">Загрузка...</p>}
+          <p className="text-sm font-medium text-[#535353] mb-2">{ui.home.leaderboard}</p>
+          {leaderboardLoading && <p className="text-sm text-[#737373]">{ui.common.loading}</p>}
           {leaderboardError && (
-            <p className="text-sm text-[#737373]">Не удалось загрузить рейтинг</p>
+            <p className="text-sm text-[#737373]">{ui.home.loadLeaderboardFailed}</p>
           )}
           {!leaderboardLoading && !leaderboardError && (
             <ul className="w-full space-y-1 text-left">
@@ -244,8 +245,8 @@ export default function HomeScreen({
         {gameMeta.features.skins && (
           <div className="w-full">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-[#535353]">Скины</p>
-              <span className="text-sm text-[#737373]">Очки: {safeTotalScore}</span>
+              <p className="text-sm font-medium text-[#535353]">{ui.home.skins}</p>
+              <span className="text-sm text-[#737373]">{ui.home.points}: {safeTotalScore}</span>
             </div>
             {skinError && (
               <p className="text-sm text-red-600 mb-2" role="alert">
@@ -289,7 +290,7 @@ export default function HomeScreen({
         onClick={onLogout}
         className="px-4 py-2 text-sm border border-[#d0d0d0] rounded-sm text-[#535353] hover:bg-[#f0f0f0] transition-colors"
       >
-        Выход
+        {ui.auth.logOut}
       </button>
     </div>
   );

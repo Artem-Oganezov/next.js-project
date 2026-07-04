@@ -1,8 +1,10 @@
+import { ui } from "@/lib/i18n/ui";
+
 type SpinnerProps = {
   label?: string;
 };
 
-export default function Spinner({ label = "Загрузка…" }: SpinnerProps) {
+export default function Spinner({ label = ui.common.loading }: SpinnerProps) {
   return (
     <div className="flex flex-col items-center gap-3 text-[#535353]" role="status">
       <div

@@ -8,6 +8,7 @@ import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { Session } from "@/lib/models/Session";
 import { User } from "@/lib/models/User";
+import { msg } from "@/lib/i18n/messages";
 import { changePasswordSchema } from "@/lib/validation/auth";
 
 export const PUT = withApiHandler(
@@ -25,7 +26,7 @@ export const PUT = withApiHandler(
 
     const parsed = changePasswordSchema.safeParse(body.data);
     if (!parsed.success) {
-      return badRequest(parsed.error.issues[0]?.message ?? "Некорректные данные");
+      return badRequest(parsed.error.issues[0]?.message ?? msg.common.invalidPayload);
     }
 
     const { currentPassword, newPassword } = parsed.data;

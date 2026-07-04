@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ApiError, api } from "@/lib/client/api";
+import { ui } from "@/lib/i18n/ui";
 import type { User } from "@/types/user";
 
 type Mode = "login" | "register";
@@ -53,7 +54,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
-        setError("Ошибка сети");
+        setError(ui.common.networkError);
       }
     } finally {
       setLoading(false);
@@ -73,12 +74,12 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
   return (
     <div className="w-full max-w-sm mx-auto">
       <h2 className="text-xl font-bold text-[#535353] tracking-tight text-center">
-        {isRegister ? "Регистрация" : "Вход"}
+        {isRegister ? ui.auth.register : ui.auth.login}
       </h2>
 
       <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3" noValidate>
         <label className="flex flex-col gap-1 text-sm text-[#535353]">
-          Имя пользователя
+          {ui.auth.username}
           <input
             type="text"
             name="username"
@@ -110,7 +111,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
         )}
 
         <label className="flex flex-col gap-1 text-sm text-[#535353]">
-          Пароль
+          {ui.auth.password}
           <input
             type="password"
             name="password"
@@ -130,7 +131,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
           data-testid="auth-submit"
           className="mt-1 px-4 py-2 bg-[#535353] text-white rounded-sm font-medium hover:bg-[#404040] disabled:opacity-60 transition-colors"
         >
-          {loading ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}
+          {loading ? ui.auth.wait : isRegister ? ui.auth.register : ui.auth.login}
         </button>
       </form>
 
@@ -147,7 +148,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
         data-testid="auth-switch-mode"
         className="mt-4 w-full text-sm text-[#737373] hover:text-[#535353] transition-colors"
       >
-        {isRegister ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Зарегистрироваться"}
+        {isRegister ? ui.auth.haveAccount : ui.auth.noAccount}
       </button>
     </div>
   );

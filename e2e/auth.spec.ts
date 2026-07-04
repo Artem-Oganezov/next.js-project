@@ -26,7 +26,7 @@ test.describe("Auth E2E", () => {
     const username = uniqueUser("e2e_login");
     await registerUser(page, username);
 
-    await page.getByRole("button", { name: "Выход" }).click();
+    await page.getByRole("button", { name: "Log out" }).click();
     await expect(page.getByTestId("auth-submit")).toBeVisible();
 
     await page.getByTestId("auth-username").fill(username);

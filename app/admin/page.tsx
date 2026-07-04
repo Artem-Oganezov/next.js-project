@@ -57,7 +57,7 @@ export default function AdminPage() {
       const data = (await response.json()) as { submissions: Submission[] };
       setSubmissions(data.submissions);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка загрузки");
+      setError(err instanceof Error ? err.message : "Failed to load submissions");
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ export default function AdminPage() {
 
   const handleUnlockSecret = () => {
     if (secret.length < 32) {
-      setError("Секрет должен быть не короче 32 символов");
+      setError("Secret must be at least 32 characters");
       return;
     }
     sessionStorage.setItem(SECRET_STORAGE_KEY, secret);
@@ -94,22 +94,22 @@ export default function AdminPage() {
         method: "POST",
         body: JSON.stringify({ reason: "admin-panel" }),
       });
-      setActionMessage(`Пользователь ${username} заблокирован`);
+      setActionMessage(`User ${username} banned`);
       await loadSubmissions();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось забанить");
+      setError(err instanceof Error ? err.message : "Failed to ban user");
     }
   };
 
   if (!storedSecret) {
     return (
       <main className="mx-auto max-w-md p-6 space-y-4">
-        <h1 className="text-xl font-bold text-[#535353]">Админка</h1>
+        <h1 className="text-xl font-bold text-[#535353]">Admin</h1>
         <p className="text-sm text-[#737373]">
-          Введите <code className="text-xs">ADMIN_SECRET</code> из окружения сервера.
+          Enter <code className="text-xs">ADMIN_SECRET</code> from the server environment.
         </p>
         <label className="flex flex-col gap-1 text-sm text-[#535353]">
-          Секрет администратора
+          Admin secret
           <input
             type="password"
             value={secret}
@@ -124,7 +124,7 @@ export default function AdminPage() {
           data-testid="admin-unlock-btn"
           className="px-4 py-2 bg-[#535353] text-white rounded-sm text-sm"
         >
-          Войти
+          Unlock
         </button>
         {error && (
           <p className="text-sm text-red-600" role="alert">
@@ -138,7 +138,7 @@ export default function AdminPage() {
   return (
     <main className="mx-auto max-w-3xl p-6 space-y-4">
       <header className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-bold text-[#535353]">Подозрительные сабмиты</h1>
+        <h1 className="text-xl font-bold text-[#535353]">Suspicious submissions</h1>
         <div className="flex gap-2">
           <button
             type="button"
@@ -146,19 +146,19 @@ export default function AdminPage() {
             data-testid="admin-refresh-btn"
             className="px-3 py-1 text-sm border border-[#d0d0d0] rounded-sm"
           >
-            Обновить
+            Refresh
           </button>
           <button
             type="button"
             onClick={handleLogout}
             className="px-3 py-1 text-sm border border-[#d0d0d0] rounded-sm"
           >
-            Выйти
+            Log out
           </button>
         </div>
       </header>
 
-      {loading && <p className="text-sm text-[#737373]">Загрузка…</p>}
+      {loading && <p className="text-sm text-[#737373]">Loading…</p>}
       {error && (
         <p className="text-sm text-red-600" role="alert">
           {error}
@@ -170,10 +170,10 @@ export default function AdminPage() {
         <table className="w-full text-sm" data-testid="admin-submissions-table">
           <thead className="bg-[#f0f0f0] text-left">
             <tr>
-              <th className="p-2">Время</th>
-              <th className="p-2">Юзер</th>
-              <th className="p-2">Счёт</th>
-              <th className="p-2">Причина</th>
+              <th className="p-2">Time</th>
+              <th className="p-2">User</th>
+              <th className="p-2">Score</th>
+              <th className="p-2">Reason</th>
               <th className="p-2" />
             </tr>
           </thead>
@@ -195,7 +195,7 @@ export default function AdminPage() {
                     data-testid={`ban-${entry.userId}`}
                     className="text-red-600 hover:underline"
                   >
-                    Бан
+                    Ban
                   </button>
                 </td>
               </tr>
@@ -203,7 +203,7 @@ export default function AdminPage() {
             {!loading && submissions.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-4 text-center text-[#737373]">
-                  Записей нет
+                  No entries
                 </td>
               </tr>
             )}

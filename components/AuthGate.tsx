@@ -1,5 +1,6 @@
 "use client";
 
+import type { User } from "@/types/user";
 import { useCallback, useEffect, useState } from "react";
 import AuthForm from "@/components/AuthForm";
 import HomeScreen from "@/components/HomeScreen";
@@ -8,16 +9,16 @@ import ProfileScreen from "@/components/ProfileScreen";
 import Spinner from "@/components/ui/Spinner";
 import { Game, SKINS } from "@/game";
 import { ApiError, api } from "@/lib/client/api";
-import type { User } from "@/types/user";
+import { ui } from "@/lib/i18n/ui";
 
 type AppScreen = "home" | "leaderboard" | "profile" | "game";
 
 type TabScreen = Exclude<AppScreen, "game">;
 
 const TAB_ITEMS: { id: TabScreen; label: string }[] = [
-  { id: "home", label: "Главная" },
-  { id: "leaderboard", label: "Рейтинг" },
-  { id: "profile", label: "Профиль" },
+  { id: "home", label: ui.nav.home },
+  { id: "leaderboard", label: ui.nav.leaderboard },
+  { id: "profile", label: ui.nav.profile },
 ];
 
 export default function AuthGate() {
@@ -39,7 +40,7 @@ export default function AuthGate() {
         setUser(null);
         return;
       }
-      setError("Не удалось проверить сессию");
+      setError(ui.auth.sessionCheckFailed);
     } finally {
       setLoading(false);
     }
@@ -69,12 +70,12 @@ export default function AuthGate() {
       setUser(null);
       setScreen("home");
     } catch {
-      setError("Не удалось выйти из аккаунта");
+      setError(ui.auth.logoutFailed);
     }
   };
 
   if (loading) {
-    return <Spinner label="Проверка сессии…" />;
+    return <Spinner label={ui.auth.sessionCheck} />;
   }
 
   if (error && !user) {
@@ -88,7 +89,7 @@ export default function AuthGate() {
           onClick={() => void loadSession()}
           className="px-4 py-2 text-sm border border-[#d0d0d0] rounded-sm hover:bg-[#f0f0f0]"
         >
-          Повторить
+          {ui.common.retry}
         </button>
       </div>
     );
@@ -129,11 +130,13 @@ export default function AuthGate() {
           {screen === "profile" && (
             <ProfileScreen
               username={user.username}
+              emailVerified={user.emailVerified}
               bestScore={user.bestScore}
               totalScore={user.totalScore}
               unlockedSkins={user.unlockedSkins}
               activeSkin={user.activeSkin}
               onUserUpdate={handleUserUpdate}
+              onLogout={() => void handleLogout()}
               onBack={() => setScreen("home")}
             />
           )}
@@ -141,7 +144,7 @@ export default function AuthGate() {
 
         <nav
           className="sticky bottom-0 mt-auto pt-3 border-t border-[#e0e0e0] bg-[#fafafa]"
-          aria-label="Основная навигация"
+          aria-label={ui.nav.main}
         >
           <ul className="flex">
             {TAB_ITEMS.map((tab) => {

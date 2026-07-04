@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { msg } from "@/lib/i18n/messages";
 
 /** Platform-level score payload. Input semantics are validated by gamePlugin. */
 export const scoreBodySchema = z.object({

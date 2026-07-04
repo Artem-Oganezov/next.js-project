@@ -8,6 +8,7 @@ import { destroySession, getSessionUser } from "@/lib/auth/session";
 import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/models/User";
+import { msg } from "@/lib/i18n/messages";
 import { deleteAccountSchema } from "@/lib/validation/auth";
 
 export const DELETE = withApiHandler(
@@ -25,7 +26,7 @@ export const DELETE = withApiHandler(
 
     const parsed = deleteAccountSchema.safeParse(body.data);
     if (!parsed.success) {
-      return badRequest(parsed.error.issues[0]?.message ?? "Некорректные данные");
+      return badRequest(parsed.error.issues[0]?.message ?? msg.common.invalidPayload);
     }
 
     await connectDB();
