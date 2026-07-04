@@ -7,6 +7,7 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.ts"],
+    exclude: ["tests/**/*.redis.test.ts"],
     pool: "forks",
     testTimeout: 30_000,
     hookTimeout: 60_000,

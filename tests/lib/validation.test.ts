@@ -42,18 +42,52 @@ describe("loginSchema", () => {
 });
 
 describe("scoreSchema", () => {
-  it("accepts valid score", () => {
-    const result = scoreSchema.safeParse({ score: 42 });
+  const sessionId = "a".repeat(24);
+
+  it("accepts valid score with session id", () => {
+    const result = scoreSchema.safeParse({ score: 42, sessionId });
     expect(result.success).toBe(true);
   });
 
   it("rejects negative score", () => {
-    const result = scoreSchema.safeParse({ score: -1 });
+    const result = scoreSchema.safeParse({ score: -1, sessionId });
     expect(result.success).toBe(false);
   });
 
   it("rejects non-integer score", () => {
-    const result = scoreSchema.safeParse({ score: 1.5 });
+    const result = scoreSchema.safeParse({ score: 1.5, sessionId });
     expect(result.success).toBe(false);
+  });
+
+  it("rejects missing or malformed session id", () => {
+    expect(scoreSchema.safeParse({ score: 42 }).success).toBe(false);
+    expect(
+      scoreSchema.safeParse({ score: 42, sessionId: "not-an-object-id" }).success,
+    ).toBe(false);
+  });
+
+  it("accepts valid jump ticks log", () => {
+    const result = scoreSchema.safeParse({
+      score: 42,
+      sessionId,
+      jumpTicks: [10, 55, 120],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects malformed jump ticks", () => {
+    expect(
+      scoreSchema.safeParse({ score: 42, sessionId, jumpTicks: [-1] }).success,
+    ).toBe(false);
+    expect(
+      scoreSchema.safeParse({ score: 42, sessionId, jumpTicks: [1.5] }).success,
+    ).toBe(false);
+    expect(
+      scoreSchema.safeParse({
+        score: 42,
+        sessionId,
+        jumpTicks: Array.from({ length: 10_001 }, (_, i) => i),
+      }).success,
+    ).toBe(false);
   });
 });

@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Минимальный self-contained билд для Docker (node .next/standalone/server.js).
+  output: "standalone",
 };
 
 export default nextConfig;

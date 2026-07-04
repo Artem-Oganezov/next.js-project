@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { RateLimit } from "@/lib/models/RateLimit";
 import { afterAll, afterEach, vi } from "vitest";
 
 const cookieJar = new Map<string, string>();
@@ -25,6 +24,9 @@ export function clearTestCookies(): void {
 }
 
 process.env.AUTH_SECRET = "vitest-auth-secret-at-least-32-chars";
+// Заведомо недоступный Redis: код обязан работать через Mongo fallback
+// (rate limit — fail-open, rank — прямой подсчёт в Mongo).
+process.env.REDIS_URL = "redis://127.0.0.1:6399";
 
 const mongoServer = await MongoMemoryServer.create();
 process.env.MONGODB_URI = mongoServer.getUri();
@@ -42,7 +44,6 @@ afterEach(async () => {
     for (const collection of Object.values(collections)) {
       await collection.deleteMany({});
     }
-    await RateLimit.deleteMany({});
   }
 });
 

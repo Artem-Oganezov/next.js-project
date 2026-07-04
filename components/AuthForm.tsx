@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ApiError, api } from "@/lib/client/api";
-import type { User } from "@/types/dino-game.types";
+import type { User } from "@/types/user";
 
 type Mode = "login" | "register";
 
@@ -87,6 +87,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
             autoComplete="username"
             required
             disabled={loading}
+            data-testid="auth-username"
             className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white focus:outline-none focus:border-[#535353]"
           />
         </label>
@@ -102,6 +103,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
               autoComplete="email"
               required
               disabled={loading}
+              data-testid="auth-email"
               className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white focus:outline-none focus:border-[#535353]"
             />
           </label>
@@ -117,6 +119,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
             autoComplete={isRegister ? "new-password" : "current-password"}
             required
             disabled={loading}
+            data-testid="auth-password"
             className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white focus:outline-none focus:border-[#535353]"
           />
         </label>
@@ -124,6 +127,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
         <button
           type="submit"
           disabled={loading}
+          data-testid="auth-submit"
           className="mt-1 px-4 py-2 bg-[#535353] text-white rounded-sm font-medium hover:bg-[#404040] disabled:opacity-60 transition-colors"
         >
           {loading ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}
@@ -140,6 +144,7 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
         type="button"
         onClick={switchMode}
         disabled={loading}
+        data-testid="auth-switch-mode"
         className="mt-4 w-full text-sm text-[#737373] hover:text-[#535353] transition-colors"
       >
         {isRegister ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Зарегистрироваться"}

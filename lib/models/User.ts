@@ -5,7 +5,12 @@ export interface IUser extends Document {
   email: string;
   passwordHash: string;
   bestScore: number;
-  activeGameStartedAt: Date | null;
+  totalScore: number;
+  unlockedSkins: string[];
+  activeSkin: string;
+  isBanned: boolean;
+  bannedAt: Date | null;
+  banReason: string | null;
 }
 
 const userSchema = new Schema<IUser>(
@@ -31,13 +36,37 @@ const userSchema = new Schema<IUser>(
       type: Number,
       default: 0,
     },
-    activeGameStartedAt: {
+    totalScore: {
+      type: Number,
+      default: 0,
+    },
+    unlockedSkins: {
+      type: [String],
+      default: ["default"],
+    },
+    activeSkin: {
+      type: String,
+      default: "default",
+    },
+    isBanned: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    bannedAt: {
       type: Date,
+      default: null,
+    },
+    banReason: {
+      type: String,
       default: null,
     },
   },
   { timestamps: true },
 );
+
+// Лидерборд и вычисление ранга сортируют/фильтруют по bestScore.
+userSchema.index({ bestScore: -1 });
 
 export const User: Model<IUser> =
   mongoose.models.User ?? mongoose.model<IUser>("User", userSchema);

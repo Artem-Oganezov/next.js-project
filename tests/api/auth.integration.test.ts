@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { connectDB } from "@/lib/db/mongoose";
-import { User } from "@/lib/models/User";
+import { GameSession } from "@/lib/models/GameSession";
+import { playHonestGame } from "../helpers/replay";
 import { jsonRequest, parseJsonResponse } from "../helpers/request";
 
 type RegisterRoute = typeof import("@/app/api/auth/register/route");
@@ -30,19 +31,44 @@ beforeAll(async () => {
   sessionStartPost = sessionStart.POST;
 });
 
-async function startGameSession(): Promise<void> {
+async function startGameSession(): Promise<{
+  sessionId: string;
+  seed: string;
+}> {
   const response = await sessionStartPost(
     jsonRequest("http://localhost/api/game/session/start", "POST", {}),
   );
   expect(response.status).toBe(200);
+  const body = (await response.json()) as { sessionId: string; seed: string };
+  expect(body.seed).toBeTruthy();
+  return body;
 }
 
-async function backdateGameSession(username: string, secondsAgo: number): Promise<void> {
+async function backdateGameSession(
+  sessionId: string,
+  secondsAgo: number,
+): Promise<void> {
   await connectDB();
-  await User.updateOne(
-    { username },
-    { activeGameStartedAt: new Date(Date.now() - secondsAgo * 1000) },
+  await GameSession.updateOne(
+    { _id: sessionId },
+    { startedAt: new Date(Date.now() - secondsAgo * 1000) },
   );
+}
+
+/**
+ * Честная партия: старт сессии, прогон автоплеером до targetScore,
+ * бэкдейт startedAt на фактическую длительность партии.
+ * Возвращает данные для валидного сабмита.
+ */
+async function playAndBackdate(targetScore: number): Promise<{
+  sessionId: string;
+  score: number;
+  jumpTicks: number[];
+}> {
+  const { sessionId, seed } = await startGameSession();
+  const run = playHonestGame(seed, targetScore);
+  await backdateGameSession(sessionId, Math.ceil(run.ticks / 60) + 5);
+  return { sessionId, score: run.score, jumpTicks: run.jumpTicks };
 }
 
 const registerPayload = {
@@ -163,13 +189,16 @@ describe("Auth API", () => {
 describe("Game score API", () => {
   it("POST /api/game/score returns 401 without session", async () => {
     const response = await scorePost(
-      jsonRequest("http://localhost/api/game/score", "POST", { score: 10 }),
+      jsonRequest("http://localhost/api/game/score", "POST", {
+        score: 10,
+        sessionId: "0".repeat(24),
+      }),
     );
     const { status } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(401);
   });
 
-  it("POST /api/game/score returns 403 without game session", async () => {
+  it("POST /api/game/score returns 403 for unknown game session", async () => {
     await registerPost(
       jsonRequest("http://localhost/api/auth/register", "POST", {
         username: "no_game_session",
@@ -179,11 +208,30 @@ describe("Game score API", () => {
     );
 
     const response = await scorePost(
-      jsonRequest("http://localhost/api/game/score", "POST", { score: 5 }),
+      jsonRequest("http://localhost/api/game/score", "POST", {
+        score: 5,
+        sessionId: "0".repeat(24),
+      }),
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(403);
     expect(body.message).toMatch(/начните игру/i);
+  });
+
+  it("POST /api/game/score returns 400 without sessionId", async () => {
+    await registerPost(
+      jsonRequest("http://localhost/api/auth/register", "POST", {
+        username: "no_session_id",
+        email: "no_session_id@example.com",
+        password: "password12",
+      }),
+    );
+
+    const response = await scorePost(
+      jsonRequest("http://localhost/api/game/score", "POST", { score: 5 }),
+    );
+    const { status } = await parseJsonResponse<{ message: string }>(response);
+    expect(status).toBe(400);
   });
 
   it("POST /api/game/score rejects cheat score with 403", async () => {
@@ -194,14 +242,87 @@ describe("Game score API", () => {
         password: "password12",
       }),
     );
-    await startGameSession();
+    const { sessionId } = await startGameSession();
+    await backdateGameSession(sessionId, 10);
 
     const response = await scorePost(
-      jsonRequest("http://localhost/api/game/score", "POST", { score: 9999 }),
+      jsonRequest("http://localhost/api/game/score", "POST", {
+        score: 9999,
+        sessionId,
+      }),
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(403);
     expect(body.message).toMatch(/слишком высокий/i);
+  });
+
+  it("POST /api/game/score rejects plausible score with fake replay log", async () => {
+    await registerPost(
+      jsonRequest("http://localhost/api/auth/register", "POST", {
+        username: "replay_cheater",
+        email: "replay_cheater@example.com",
+        password: "password12",
+      }),
+    );
+    const { sessionId } = await startGameSession();
+    await backdateGameSession(sessionId, 30);
+
+    // 100 очков проходят эвристику (18/сек × 30с), но replay по seed
+    // с пустым логом прыжков даёт другой счёт.
+    const response = await scorePost(
+      jsonRequest("http://localhost/api/game/score", "POST", {
+        score: 100,
+        sessionId,
+        jumpTicks: [],
+      }),
+    );
+    const { status, body } = await parseJsonResponse<{ message: string }>(response);
+    expect(status).toBe(403);
+    expect(body.message).toMatch(/не совпадает/i);
+  });
+
+  it("POST /api/game/score rejects too short game with 403", async () => {
+    await registerPost(
+      jsonRequest("http://localhost/api/auth/register", "POST", {
+        username: "speedrunner",
+        email: "speedrunner@example.com",
+        password: "password12",
+      }),
+    );
+    const { sessionId } = await startGameSession();
+
+    const response = await scorePost(
+      jsonRequest("http://localhost/api/game/score", "POST", {
+        score: 3,
+        sessionId,
+      }),
+    );
+    const { status, body } = await parseJsonResponse<{ message: string }>(response);
+    expect(status).toBe(403);
+    expect(body.message).toMatch(/короткая/i);
+  });
+
+  it("POST /api/game/score rejects duplicate submit for same session", async () => {
+    await registerPost(
+      jsonRequest("http://localhost/api/auth/register", "POST", {
+        username: "replayer",
+        email: "replayer@example.com",
+        password: "password12",
+      }),
+    );
+    const run = await playAndBackdate(30);
+
+    const first = await scorePost(
+      jsonRequest("http://localhost/api/game/score", "POST", run),
+    );
+    expect(first.status).toBe(200);
+
+    const second = await scorePost(
+      jsonRequest("http://localhost/api/game/score", "POST", run),
+    );
+    const { status, body } = await parseJsonResponse<{ message: string }>(second);
+    expect(status).toBe(403);
+    expect(body.message).toMatch(/уже засчитан/i);
   });
 
   it("POST /api/game/score updates best score when authenticated", async () => {
@@ -213,46 +334,52 @@ describe("Game score API", () => {
       }),
     );
 
-    await startGameSession();
-    await backdateGameSession("scorer", 30);
-
+    // Партия 1: рекорд (~50+).
+    const runA = await playAndBackdate(50);
     const first = await scorePost(
-      jsonRequest("http://localhost/api/game/score", "POST", { score: 50 }),
+      jsonRequest("http://localhost/api/game/score", "POST", runA),
     );
     const firstBody = await parseJsonResponse<{
       bestScore: number;
+      totalScore: number;
       isNewRecord: boolean;
     }>(first);
     expect(firstBody.status).toBe(200);
-    expect(firstBody.body.bestScore).toBe(50);
+    expect(firstBody.body.bestScore).toBe(runA.score);
+    expect(firstBody.body.totalScore).toBe(runA.score);
     expect(firstBody.body.isNewRecord).toBe(true);
 
-    await startGameSession();
-    await backdateGameSession("scorer", 30);
-
+    // Партия 2: без прыжков — смерть на первом кактусе, счёт заведомо
+    // меньше партии 1 (< 50): рекорд не обновляется.
+    const runB = await playAndBackdate(0);
+    expect(runB.score).toBeLessThan(runA.score);
     const second = await scorePost(
-      jsonRequest("http://localhost/api/game/score", "POST", { score: 30 }),
+      jsonRequest("http://localhost/api/game/score", "POST", runB),
     );
     const secondBody = await parseJsonResponse<{
       bestScore: number;
+      totalScore: number;
       isNewRecord: boolean;
     }>(second);
     expect(secondBody.status).toBe(200);
-    expect(secondBody.body.bestScore).toBe(50);
+    expect(secondBody.body.bestScore).toBe(runA.score);
+    expect(secondBody.body.totalScore).toBe(runA.score + runB.score);
     expect(secondBody.body.isNewRecord).toBe(false);
 
-    await startGameSession();
-    await backdateGameSession("scorer", 60);
-
+    // Партия 3: новый рекорд (~120+ > партии 1).
+    const runC = await playAndBackdate(120);
+    expect(runC.score).toBeGreaterThan(runA.score);
     const third = await scorePost(
-      jsonRequest("http://localhost/api/game/score", "POST", { score: 120 }),
+      jsonRequest("http://localhost/api/game/score", "POST", runC),
     );
     const thirdBody = await parseJsonResponse<{
       bestScore: number;
+      totalScore: number;
       isNewRecord: boolean;
     }>(third);
     expect(thirdBody.status).toBe(200);
-    expect(thirdBody.body.bestScore).toBe(120);
+    expect(thirdBody.body.bestScore).toBe(runC.score);
+    expect(thirdBody.body.totalScore).toBe(runA.score + runB.score + runC.score);
     expect(thirdBody.body.isNewRecord).toBe(true);
   });
 });

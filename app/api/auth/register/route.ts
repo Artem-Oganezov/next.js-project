@@ -40,10 +40,7 @@ export const POST = withApiHandler(
       await createSession(user._id);
       return NextResponse.json({ user: toPublicUser(user) }, { status: 201 });
     } catch (error) {
-      if (
-        error instanceof mongoose.mongo.MongoServerError &&
-        error.code === 11000
-      ) {
+      if (error instanceof mongoose.mongo.MongoServerError && error.code === 11000) {
         return conflict("Пользователь с таким именем или email уже существует");
       }
       throw error;

@@ -12,7 +12,10 @@ type ApiFetchOptions = RequestInit & {
   json?: unknown;
 };
 
-export async function apiFetch<T>(url: string, options: ApiFetchOptions = {}): Promise<T> {
+export async function apiFetch<T>(
+  url: string,
+  options: ApiFetchOptions = {},
+): Promise<T> {
   const { json, headers, ...rest } = options;
 
   const response = await fetch(url, {
@@ -35,23 +38,34 @@ export async function apiFetch<T>(url: string, options: ApiFetchOptions = {}): P
 }
 
 export const api = {
-  me: () => apiFetch<{ user: import("@/types/dino-game.types").User }>("/api/auth/me"),
+  me: () => apiFetch<{ user: import("@/types/user").User }>("/api/auth/me"),
   login: (body: { username: string; password: string }) =>
-    apiFetch<{ user: import("@/types/dino-game.types").User }>("/api/auth/login", {
+    apiFetch<{ user: import("@/types/user").User }>("/api/auth/login", {
       method: "POST",
       json: body,
     }),
   register: (body: { username: string; email: string; password: string }) =>
-    apiFetch<{ user: import("@/types/dino-game.types").User }>("/api/auth/register", {
+    apiFetch<{ user: import("@/types/user").User }>("/api/auth/register", {
       method: "POST",
       json: body,
     }),
   logout: () => apiFetch<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
   startGameSession: () =>
-    apiFetch<{ startedAt: string }>("/api/game/session/start", { method: "POST" }),
-  submitScore: (score: number) =>
-    apiFetch<{ bestScore: number; isNewRecord: boolean }>("/api/game/score", {
+    apiFetch<{ sessionId: string; seed: string; startedAt: string }>(
+      "/api/game/session/start",
+      { method: "POST" },
+    ),
+  submitScore: (score: number, sessionId: string, jumpTicks: number[]) =>
+    apiFetch<{
+      bestScore: number;
+      totalScore: number;
+      isNewRecord: boolean;
+      rank: number;
+      nextUsername: string | null;
+    }>("/api/game/score", {
       method: "POST",
-      json: { score },
+      json: { score, sessionId, jumpTicks },
     }),
+  getLeaderboardRank: () =>
+    apiFetch<{ rank: number; nextUsername: string | null }>("/api/leaderboard/rank"),
 };

@@ -11,10 +11,9 @@ export function getClientIp(request: Request | undefined): string {
   return request.headers.get("x-real-ip") ?? "unknown";
 }
 
-export async function parseJsonBody(request: Request): Promise<
-  | { ok: true; data: unknown }
-  | { ok: false; response: Response }
-> {
+export async function parseJsonBody(
+  request: Request,
+): Promise<{ ok: true; data: unknown } | { ok: false; response: Response }> {
   try {
     return { ok: true, data: await request.json() };
   } catch {

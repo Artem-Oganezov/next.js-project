@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.github
+tests
+terminals
+*.md
+.env*
+!.env.example
+tsconfig.tsbuildinfo
+docker-compose*.yml
+Dockerfile
+nginx.example.conf

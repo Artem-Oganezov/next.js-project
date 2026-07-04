@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { badRequest, unauthorized } from "@/lib/api/errors";
+import { badRequest, forbidden, unauthorized } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { parseJsonBody } from "@/lib/api/http";
 import { verifyPassword } from "@/lib/auth/password";
@@ -29,6 +29,10 @@ export const POST = withApiHandler(
     const user = await User.findOne({ username });
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
       return unauthorized("Неверные данные");
+    }
+
+    if (user.isBanned) {
+      return forbidden("Аккаунт заблокирован");
     }
 
     await createSession(user._id);

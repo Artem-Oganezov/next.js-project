@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { APP_NAME } from "@/lib/config/app";
+import { gameMeta } from "@/game/meta";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,9 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} — онлайн-игра с рекордами`,
-  description:
-    "Браузерная игра в стиле Chrome Dino с регистрацией, сессиями и сохранением рекорда в MongoDB.",
+  title: `${gameMeta.displayName} — онлайн-игра с рекордами`,
+  description: gameMeta.description,
 };
 
 export default function RootLayout({

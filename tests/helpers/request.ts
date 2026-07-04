@@ -6,11 +6,7 @@ export async function parseJsonResponse<T>(response: Response): Promise<{
   return { status: response.status, body };
 }
 
-export function jsonRequest(
-  url: string,
-  method: string,
-  payload: unknown,
-): Request {
+export function jsonRequest(url: string, method: string, payload: unknown): Request {
   return new Request(url, {
     method,
     headers: { "Content-Type": "application/json" },
