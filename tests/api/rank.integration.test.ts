@@ -71,7 +71,7 @@ async function submitScore(targetScore: number): Promise<Response> {
     jsonRequest("http://localhost/api/game/score", "POST", {
       score: run.score,
       sessionId,
-      jumpTicks: run.jumpTicks,
+      inputLog: run.jumpTicks,
     }),
   );
 }

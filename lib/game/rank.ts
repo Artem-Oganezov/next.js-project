@@ -4,6 +4,12 @@ import {
   rankFromCache,
 } from "@/lib/cache/leaderboard";
 import { connectDB } from "@/lib/db/mongoose";
+import { gamePlugin } from "@/lib/game/plugin";
+import {
+  mongoBetterThanFilter,
+  mongoNextSort,
+  type ScoreOrder,
+} from "@/lib/game/score-order";
 import { User } from "@/lib/models/User";
 
 export type RankResult = {
@@ -13,7 +19,7 @@ export type RankResult = {
 
 const SEED_BATCH_SIZE = 1000;
 
-async function seedLeaderboardFromMongo(): Promise<void> {
+async function seedLeaderboardFromMongo(order: ScoreOrder): Promise<void> {
   await connectDB();
 
   let batch: { username: string; bestScore: number }[] = [];
@@ -23,27 +29,25 @@ async function seedLeaderboardFromMongo(): Promise<void> {
   for await (const doc of cursor) {
     batch.push({ username: doc.username, bestScore: doc.bestScore });
     if (batch.length >= SEED_BATCH_SIZE) {
-      await bulkSeedLeaderboard(batch);
+      await bulkSeedLeaderboard(batch, order);
       batch = [];
     }
   }
 
   if (batch.length > 0) {
-    await bulkSeedLeaderboard(batch);
+    await bulkSeedLeaderboard(batch, order);
   }
 }
 
-async function rankFromMongo(bestScore: number): Promise<RankResult> {
+async function rankFromMongo(bestScore: number, order: ScoreOrder): Promise<RankResult> {
   await connectDB();
 
-  const higherCount = await User.countDocuments({
-    bestScore: { $gt: bestScore },
-  });
+  const higherCount = await User.countDocuments(mongoBetterThanFilter(bestScore, order));
 
   let nextUsername: string | null = null;
   if (higherCount > 0) {
-    const nextUser = await User.findOne({ bestScore: { $gt: bestScore } })
-      .sort({ bestScore: 1 })
+    const nextUser = await User.findOne(mongoBetterThanFilter(bestScore, order))
+      .sort(mongoNextSort(order))
       .select("username -_id")
       .lean();
     nextUsername = nextUser?.username ?? null;
@@ -62,12 +66,14 @@ export async function computeRank(
   username: string,
   bestScore: number,
 ): Promise<RankResult> {
+  const order = gamePlugin.scoreOrder;
+
   try {
     if ((await leaderboardSize()) === 0) {
-      await seedLeaderboardFromMongo();
+      await seedLeaderboardFromMongo(order);
     }
-    return await rankFromCache(username, bestScore);
+    return await rankFromCache(username, bestScore, order);
   } catch {
-    return rankFromMongo(bestScore);
+    return rankFromMongo(bestScore, order);
   }
 }

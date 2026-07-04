@@ -30,6 +30,18 @@ export async function connectDB(): Promise<typeof mongoose> {
     cached.promise = mongoose.connect(MONGODB_URI);
   }
 
-  cached.conn = await cached.promise;
-  return cached.conn;
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
+  } catch (error) {
+    cached.promise = null;
+    cached.conn = null;
+    throw error;
+  }
+}
+
+/** Сброс кэша подключения (тесты). */
+export function resetDbCache(): void {
+  cached.conn = null;
+  cached.promise = null;
 }

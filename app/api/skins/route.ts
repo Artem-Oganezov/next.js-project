@@ -10,9 +10,10 @@ import { connectDB } from "@/lib/db/mongoose";
 // не нужен клиентский компонент Game.
 import { SKINS } from "@/game/skins";
 import { User } from "@/lib/models/User";
+import { msg } from "@/lib/i18n/messages";
 
 const skinIdSchema = z.object({
-  skinId: z.string().min(1, "skinId обязателен"),
+  skinId: z.string().min(1, msg.skins.skinIdRequired),
 });
 
 export const POST = withApiHandler(
@@ -30,38 +31,45 @@ export const POST = withApiHandler(
 
     const parsed = skinIdSchema.safeParse(body.data);
     if (!parsed.success) {
-      return badRequest(parsed.error.issues[0]?.message ?? "Некорректные данные");
+      return badRequest(parsed.error.issues[0]?.message ?? msg.common.invalidPayload);
     }
 
     const { skinId } = parsed.data;
 
     const skin = SKINS.find((item) => item.id === skinId);
     if (!skin) {
-      return badRequest("Скин не найден");
+      return badRequest(msg.skins.notFound);
     }
 
     await connectDB();
 
-    const user = await User.findById(sessionUser.id);
-    if (!user) {
-      return unauthorized();
-    }
+    const updated = await User.findOneAndUpdate(
+      {
+        _id: sessionUser.id,
+        totalScore: { $gte: skin.price },
+        unlockedSkins: { $ne: skinId },
+      },
+      {
+        $inc: { totalScore: -skin.price },
+        $push: { unlockedSkins: skinId },
+      },
+      { returnDocument: "after" },
+    );
 
-    if (user.unlockedSkins.includes(skinId)) {
-      return badRequest("уже разблокирован");
+    if (!updated) {
+      const user = await User.findById(sessionUser.id);
+      if (!user) {
+        return unauthorized();
+      }
+      if (user.unlockedSkins.includes(skinId)) {
+        return badRequest(msg.skins.alreadyUnlocked);
+      }
+      return badRequest(msg.skins.insufficientPoints);
     }
-
-    if (user.totalScore < skin.price) {
-      return badRequest("недостаточно очков");
-    }
-
-    user.totalScore -= skin.price;
-    user.unlockedSkins.push(skinId);
-    await user.save();
 
     return NextResponse.json({
-      totalScore: user.totalScore,
-      unlockedSkins: user.unlockedSkins,
+      totalScore: updated.totalScore,
+      unlockedSkins: updated.unlockedSkins,
     });
   },
   {
@@ -86,27 +94,29 @@ export const PUT = withApiHandler(
 
     const parsed = skinIdSchema.safeParse(body.data);
     if (!parsed.success) {
-      return badRequest(parsed.error.issues[0]?.message ?? "Некорректные данные");
+      return badRequest(parsed.error.issues[0]?.message ?? msg.common.invalidPayload);
     }
 
     const { skinId } = parsed.data;
 
     await connectDB();
 
-    const user = await User.findById(sessionUser.id);
-    if (!user) {
-      return unauthorized();
-    }
+    const updated = await User.findOneAndUpdate(
+      { _id: sessionUser.id, unlockedSkins: skinId },
+      { $set: { activeSkin: skinId } },
+      { returnDocument: "after" },
+    );
 
-    if (!user.unlockedSkins.includes(skinId)) {
-      return badRequest("Скин не разблокирован");
+    if (!updated) {
+      const user = await User.findById(sessionUser.id);
+      if (!user) {
+        return unauthorized();
+      }
+      return badRequest(msg.skins.notUnlocked);
     }
-
-    user.activeSkin = skinId;
-    await user.save();
 
     return NextResponse.json({
-      activeSkin: user.activeSkin,
+      activeSkin: updated.activeSkin,
     });
   },
   {

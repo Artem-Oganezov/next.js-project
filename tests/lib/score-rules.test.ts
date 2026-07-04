@@ -27,7 +27,7 @@ describe("validateGameScore", () => {
     const result = validateGameScore(5, null, config);
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.message).toMatch(/начните игру/i);
+      expect(result.message).toMatch(/start a game/i);
     }
   });
 
@@ -50,7 +50,7 @@ describe("validateGameScore", () => {
     );
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.message).toMatch(/короткая/i);
+      expect(result.message).toMatch(/too short/i);
     }
   });
 
@@ -63,7 +63,7 @@ describe("validateGameScore", () => {
     );
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.message).toMatch(/истекла/i);
+      expect(result.message).toMatch(/expired/i);
     }
   });
 

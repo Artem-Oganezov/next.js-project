@@ -1,5 +1,7 @@
 import { unauthorized } from "@/lib/api/errors";
+import { msg } from "@/lib/i18n/messages";
 import { getEnv } from "@/lib/env";
+import { secureCompare } from "@/lib/security/secure-compare";
 
 /**
  * Проверка секрета админки: заголовок `X-Admin-Secret` или
@@ -8,7 +10,7 @@ import { getEnv } from "@/lib/env";
 export function requireAdminSecret(request: Request): Response | null {
   const { ADMIN_SECRET } = getEnv();
   if (!ADMIN_SECRET) {
-    return unauthorized("Админка не настроена");
+    return unauthorized(msg.admin.notConfigured);
   }
 
   const headerSecret = request.headers.get("x-admin-secret");
@@ -18,8 +20,8 @@ export function requireAdminSecret(request: Request): Response | null {
     : null;
   const provided = headerSecret ?? bearer;
 
-  if (!provided || provided !== ADMIN_SECRET) {
-    return unauthorized("Неверный секрет администратора");
+  if (!provided || !secureCompare(provided, ADMIN_SECRET)) {
+    return unauthorized(msg.admin.invalidSecret);
   }
 
   return null;

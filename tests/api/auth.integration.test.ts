@@ -63,12 +63,12 @@ async function backdateGameSession(
 async function playAndBackdate(targetScore: number): Promise<{
   sessionId: string;
   score: number;
-  jumpTicks: number[];
+  inputLog: number[];
 }> {
   const { sessionId, seed } = await startGameSession();
   const run = playHonestGame(seed, targetScore);
   await backdateGameSession(sessionId, Math.ceil(run.ticks / 60) + 5);
-  return { sessionId, score: run.score, jumpTicks: run.jumpTicks };
+  return { sessionId, score: run.score, inputLog: run.jumpTicks };
 }
 
 const registerPayload = {
@@ -103,7 +103,7 @@ describe("Auth API", () => {
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
 
     expect(status).toBe(409);
-    expect(body.message).toMatch(/уже существует/i);
+    expect(body.message).toMatch(/already taken/i);
   });
 
   it("POST /api/auth/register rejects invalid payload with 400", async () => {
@@ -215,7 +215,7 @@ describe("Game score API", () => {
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(403);
-    expect(body.message).toMatch(/начните игру/i);
+    expect(body.message).toMatch(/start a game/i);
   });
 
   it("POST /api/game/score returns 400 without sessionId", async () => {
@@ -253,7 +253,7 @@ describe("Game score API", () => {
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(403);
-    expect(body.message).toMatch(/слишком высокий/i);
+    expect(body.message).toMatch(/too high/i);
   });
 
   it("POST /api/game/score rejects plausible score with fake replay log", async () => {
@@ -273,12 +273,12 @@ describe("Game score API", () => {
       jsonRequest("http://localhost/api/game/score", "POST", {
         score: 100,
         sessionId,
-        jumpTicks: [],
+        inputLog: [],
       }),
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(403);
-    expect(body.message).toMatch(/не совпадает/i);
+    expect(body.message).toMatch(/does not match/i);
   });
 
   it("POST /api/game/score rejects too short game with 403", async () => {
@@ -299,7 +299,7 @@ describe("Game score API", () => {
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(403);
-    expect(body.message).toMatch(/короткая/i);
+    expect(body.message).toMatch(/too short/i);
   });
 
   it("POST /api/game/score rejects duplicate submit for same session", async () => {
@@ -322,7 +322,7 @@ describe("Game score API", () => {
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(second);
     expect(status).toBe(403);
-    expect(body.message).toMatch(/уже засчитан/i);
+    expect(body.message).toMatch(/already submitted/i);
   });
 
   it("POST /api/game/score updates best score when authenticated", async () => {

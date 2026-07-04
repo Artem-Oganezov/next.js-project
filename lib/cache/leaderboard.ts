@@ -1,3 +1,5 @@
+import type { ScoreOrder } from "@/lib/game/score-order";
+import { toLeaderboardKey } from "@/lib/game/score-order";
 import { getRedis } from "@/lib/redis";
 
 const TOP10_KEY = "lb:top10";
@@ -37,15 +39,18 @@ export async function invalidateTop10(): Promise<void> {
 }
 
 /**
- * ZSET всех результатов (member = username, score = bestScore).
+ * ZSET всех результатов (member = username, score = normalized bestScore).
  * Обновляется при каждом новом рекорде; используется для O(log N) ранга.
  */
 export async function upsertLeaderboardScore(
   username: string,
   bestScore: number,
+  order: ScoreOrder,
 ): Promise<void> {
   try {
-    await getRedis().zadd(SCORES_KEY, [{ score: bestScore, member: username }]);
+    await getRedis().zadd(SCORES_KEY, [
+      { score: toLeaderboardKey(bestScore, order), member: username },
+    ]);
   } catch {
     // ранг посчитается через Mongo fallback
   }
@@ -53,10 +58,14 @@ export async function upsertLeaderboardScore(
 
 export async function bulkSeedLeaderboard(
   entries: { username: string; bestScore: number }[],
+  order: ScoreOrder,
 ): Promise<void> {
   await getRedis().zadd(
     SCORES_KEY,
-    entries.map((e) => ({ score: e.bestScore, member: e.username })),
+    entries.map((e) => ({
+      score: toLeaderboardKey(e.bestScore, order),
+      member: e.username,
+    })),
   );
 }
 
@@ -68,15 +77,16 @@ export async function leaderboardSize(): Promise<number> {
 export async function rankFromCache(
   username: string,
   bestScore: number,
+  order: ScoreOrder,
 ): Promise<{ rank: number; nextUsername: string | null }> {
   const redis = getRedis();
+  const key = toLeaderboardKey(bestScore, order);
 
-  // Самовосстановление: свой актуальный счёт всегда дописываем перед чтением.
-  await redis.zadd(SCORES_KEY, [{ score: bestScore, member: username }]);
+  await redis.zadd(SCORES_KEY, [{ score: key, member: username }]);
 
-  const higherCount = await redis.zcountAbove(SCORES_KEY, bestScore);
+  const higherCount = await redis.zcountAbove(SCORES_KEY, key);
   const nextUsername =
-    higherCount > 0 ? await redis.zfirstAbove(SCORES_KEY, bestScore) : null;
+    higherCount > 0 ? await redis.zfirstAbove(SCORES_KEY, key) : null;
 
   return { rank: higherCount + 1, nextUsername };
 }

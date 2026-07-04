@@ -48,8 +48,8 @@ const scoreRules: ScoreRulesConfig = {
 - при старте партии вызывает `api.startGameSession()` → `sessionId` + `seed`;
 - партию ведёт детерминированный движок (свой аналог `game/engine.ts`:
   fixed timestep, PRNG из `createSeededRandom(seed)`), компонент только
-  рендерит его состояние и записывает лог ввода (`jumpTicks`);
-- на game over вызывает `api.submitScore(score, sessionId, jumpTicks)`
+  renders engine state and records input log (`inputLog` — format is game-specific);
+- на game over вызывает `api.submitScore(score, sessionId, inputLog)`
   и показывает ошибку, если сохранить не удалось.
 
 ### 4. `game/constants.ts` и `game/types.ts` — 15 минут

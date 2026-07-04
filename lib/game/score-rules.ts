@@ -1,13 +1,9 @@
 export type ScoreValidationResult = { ok: true } | { ok: false; message: string };
 
 export type ScoreRulesConfig = {
-  /** Максимум очков в секунду, достижимый честной игрой (с запасом). */
   maxScorePerSecond: number;
-  /** Фиксированный допуск к рассчитанному максимуму. */
   scoreGrace: number;
-  /** Партия дольше этого времени считается протухшей. */
   maxGameDurationMs: number;
-  /** Партия короче этого времени отклоняется (0 — проверка выключена). */
   minGameDurationMs: number;
 };
 
@@ -27,21 +23,21 @@ export function validateGameScore(
   now: Date = new Date(),
 ): ScoreValidationResult {
   if (!gameStartedAt) {
-    return { ok: false, message: "Сначала начните игру" };
+    return { ok: false, message: "Start a game session first" };
   }
 
   const elapsedMs = now.getTime() - gameStartedAt.getTime();
 
   if (elapsedMs > config.maxGameDurationMs) {
-    return { ok: false, message: "Игровая сессия истекла, начните заново" };
+    return { ok: false, message: "Game session expired, start a new run" };
   }
 
   if (submittedScore > maxPlausibleScore(elapsedMs, config)) {
-    return { ok: false, message: "Слишком высокий счёт для этой партии" };
+    return { ok: false, message: "Score too high for this run" };
   }
 
   if (elapsedMs < config.minGameDurationMs) {
-    return { ok: false, message: "Партия слишком короткая" };
+    return { ok: false, message: "Run too short" };
   }
 
   return { ok: true };

@@ -55,7 +55,7 @@ export const api = {
       "/api/game/session/start",
       { method: "POST" },
     ),
-  submitScore: (score: number, sessionId: string, jumpTicks: number[]) =>
+  submitScore: (score: number, sessionId: string, inputLog: unknown) =>
     apiFetch<{
       bestScore: number;
       totalScore: number;
@@ -64,7 +64,7 @@ export const api = {
       nextUsername: string | null;
     }>("/api/game/score", {
       method: "POST",
-      json: { score, sessionId, jumpTicks },
+      json: { score, sessionId, inputLog },
     }),
   getLeaderboardRank: () =>
     apiFetch<{ rank: number; nextUsername: string | null }>("/api/leaderboard/rank"),

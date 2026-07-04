@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { internalError, tooManyRequests } from "@/lib/api/errors";
 import { getClientIp } from "@/lib/api/http";
+import { rateLimitMessage } from "@/lib/i18n/messages";
 import { incrementCounter } from "@/lib/observability/metrics";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 
@@ -33,9 +34,7 @@ export function withApiHandler(
         );
 
         if (!result.ok) {
-          const limited = tooManyRequests(
-            `Слишком много запросов. Повторите через ${result.retryAfterSec} сек.`,
-          );
+          const limited = tooManyRequests(rateLimitMessage(result.retryAfterSec));
           limited.headers.set("X-Request-Id", requestId);
           incrementCounter("http_requests_total", {
             scope,

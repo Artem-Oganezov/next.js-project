@@ -90,7 +90,7 @@ describe("Admin API", () => {
       jsonRequest("http://localhost/api/game/score", "POST", {
         score: 9999,
         sessionId,
-        jumpTicks: [],
+        inputLog: [],
       }),
     );
     expect(cheatResponse.status).toBe(403);

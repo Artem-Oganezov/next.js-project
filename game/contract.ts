@@ -5,9 +5,9 @@
  * 1. Принимать эти props (лишние можно игнорировать).
  * 2. Перед началом партии вызвать api.startGameSession() и вести партию
  *    детерминированно от полученного seed (см. game/engine.ts).
- * 3. Записывать лог ввода (номера тиков прыжков) — он нужен серверной
+ * 3. Записывать лог ввода (формат задаёт игра) — он нужен серверной
  *    replay-валидации.
- * 4. На game over вызвать api.submitScore(score, sessionId, jumpTicks).
+ * 4. На game over вызвать api.submitScore(score, sessionId, inputLog).
  *
  * Shell не знает название игры — он рендерит <Game /> из @/game.
  */

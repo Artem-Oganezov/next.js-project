@@ -3,6 +3,7 @@ import mongoose, { Schema, type Document, type Model } from "mongoose";
 export interface IUser extends Document {
   username: string;
   email: string;
+  emailVerified: boolean;
   passwordHash: string;
   bestScore: number;
   totalScore: number;
@@ -27,6 +28,10 @@ const userSchema = new Schema<IUser>(
       unique: true,
       trim: true,
       lowercase: true,
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
     },
     passwordHash: {
       type: String,

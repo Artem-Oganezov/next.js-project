@@ -15,6 +15,7 @@ export function toPublicUser(user: IUser): PublicUser {
     id: user._id.toString(),
     username: user.username,
     email: user.email,
+    emailVerified: user.emailVerified,
     bestScore: user.bestScore,
     totalScore: user.totalScore,
     unlockedSkins: user.unlockedSkins,

@@ -2,6 +2,14 @@ import { Redis as UpstashRedis } from "@upstash/redis";
 import IORedis from "ioredis";
 import { getEnv } from "@/lib/env";
 
+const INCR_WITH_EXPIRE_SCRIPT = `
+local c = redis.call('INCR', KEYS[1])
+if c == 1 then
+  redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return c
+`;
+
 /**
  * Единый интерфейс поверх двух транспортов:
  * - REDIS_URL (ioredis, TCP) — VPS / Docker / managed Redis;
@@ -15,6 +23,8 @@ export type RedisClient = {
   setEx(key: string, value: string, exSeconds: number): Promise<void>;
   del(key: string): Promise<void>;
   incr(key: string): Promise<number>;
+  /** Atomically INCR and set EXPIRE on first hit (Lua). */
+  incrWithExpire(key: string, exSeconds: number): Promise<number>;
   expire(key: string, seconds: number): Promise<void>;
   ttl(key: string): Promise<number>;
   zadd(key: string, entries: { score: number; member: string }[]): Promise<void>;
@@ -49,6 +59,15 @@ function createIoRedisClient(url: string): RedisClient {
     },
     async incr(key) {
       return client.incr(key);
+    },
+    async incrWithExpire(key, exSeconds) {
+      const result = await client.eval(
+        INCR_WITH_EXPIRE_SCRIPT,
+        1,
+        key,
+        String(exSeconds),
+      );
+      return Number(result);
     },
     async expire(key, seconds) {
       await client.expire(key, seconds);
@@ -103,6 +122,12 @@ function createUpstashClient(url: string, token: string): RedisClient {
     },
     async incr(key) {
       return client.incr(key);
+    },
+    async incrWithExpire(key, exSeconds) {
+      const result = await client.eval(INCR_WITH_EXPIRE_SCRIPT, [key], [
+        String(exSeconds),
+      ]);
+      return Number(result);
     },
     async expire(key, seconds) {
       await client.expire(key, seconds);

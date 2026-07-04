@@ -1,14 +1,25 @@
+import { getEnv } from "@/lib/env";
+
 export function getClientIp(request: Request | undefined): string {
   if (!request) {
     return "unknown";
   }
 
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0]?.trim() || "unknown";
+  const { TRUST_PROXY } = getEnv();
+
+  if (TRUST_PROXY) {
+    const forwarded = request.headers.get("x-forwarded-for");
+    if (forwarded) {
+      return forwarded.split(",")[0]?.trim() || "unknown";
+    }
+
+    const realIp = request.headers.get("x-real-ip");
+    if (realIp) {
+      return realIp;
+    }
   }
 
-  return request.headers.get("x-real-ip") ?? "unknown";
+  return "unknown";
 }
 
 export async function parseJsonBody(
@@ -18,6 +29,7 @@ export async function parseJsonBody(
     return { ok: true, data: await request.json() };
   } catch {
     const { badRequest } = await import("@/lib/api/errors");
-    return { ok: false, response: badRequest("Некорректный JSON") };
+    const { msg } = await import("@/lib/i18n/messages");
+    return { ok: false, response: badRequest(msg.common.invalidJson) };
   }
 }

@@ -35,6 +35,17 @@ const envSchema = z
       .transform((value) => value === "true"),
     // Секрет для /api/admin/* и опциональной защиты /api/metrics (min 32 символа).
     ADMIN_SECRET: z.string().min(32).optional(),
+    APP_URL: z.string().url("APP_URL must be a valid URL").optional(),
+    SMTP_HOST: z.string().min(1).optional(),
+    SMTP_PORT: z.coerce.number().int().positive().optional(),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    EMAIL_FROM: z.string().email().optional(),
+    // Trust X-Forwarded-For only behind reverse proxy (nginx, Caddy).
+    TRUST_PROXY: z
+      .enum(["true", "false"])
+      .optional()
+      .transform((value) => value === "true"),
     NODE_ENV: z.enum(["development", "production", "test"]).optional(),
   })
   .superRefine((env, ctx) => {
@@ -68,6 +79,13 @@ export function getEnv(): Env {
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     RATE_LIMIT_FAIL_CLOSED: process.env.RATE_LIMIT_FAIL_CLOSED,
     ADMIN_SECRET: process.env.ADMIN_SECRET,
+    APP_URL: process.env.APP_URL,
+    SMTP_HOST: process.env.SMTP_HOST,
+    SMTP_PORT: process.env.SMTP_PORT,
+    SMTP_USER: process.env.SMTP_USER,
+    SMTP_PASS: process.env.SMTP_PASS,
+    EMAIL_FROM: process.env.EMAIL_FROM,
+    TRUST_PROXY: process.env.TRUST_PROXY,
     NODE_ENV: process.env.NODE_ENV,
   });
 

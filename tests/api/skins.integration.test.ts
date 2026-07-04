@@ -57,7 +57,7 @@ describe("Skins API", () => {
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(400);
-    expect(body.message).toMatch(/не найден/i);
+    expect(body.message).toMatch(/not found/i);
   });
 
   it("POST /api/skins rejects purchase without enough points", async () => {
@@ -67,7 +67,7 @@ describe("Skins API", () => {
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(400);
-    expect(body.message).toMatch(/недостаточно/i);
+    expect(body.message).toMatch(/insufficient/i);
   });
 
   it("POST /api/skins unlocks skin and deducts points", async () => {
@@ -101,7 +101,7 @@ describe("Skins API", () => {
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(second);
     expect(status).toBe(400);
-    expect(body.message).toMatch(/уже разблокирован/i);
+    expect(body.message).toMatch(/already unlocked/i);
   });
 
   it("PUT /api/skins rejects equipping locked skin", async () => {
@@ -111,7 +111,7 @@ describe("Skins API", () => {
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(400);
-    expect(body.message).toMatch(/не разблокирован/i);
+    expect(body.message).toMatch(/not unlocked/i);
   });
 
   it("PUT /api/skins equips unlocked skin", async () => {

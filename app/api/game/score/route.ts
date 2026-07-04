@@ -8,11 +8,13 @@ import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { gamePlugin } from "@/lib/game/plugin";
 import { computeRank } from "@/lib/game/rank";
+import { isBetterScore } from "@/lib/game/score-order";
 import { GameSession } from "@/lib/models/GameSession";
 import { User } from "@/lib/models/User";
 import { recordSuspiciousSubmit } from "@/lib/security/anti-cheat";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
-import { scoreSchema } from "@/lib/validation/score";
+import { scoreBodySchema } from "@/lib/validation/score";
+import { msg } from "@/lib/i18n/messages";
 
 export const POST = withApiHandler(
   "game/score",
@@ -28,7 +30,7 @@ export const POST = withApiHandler(
       RATE_LIMIT.SCORE_WINDOW_MS,
     );
     if (!userLimit.ok) {
-      return tooManyRequests("Слишком много запросов");
+      return tooManyRequests(msg.game.tooManyRequests);
     }
 
     const body = await parseJsonBody(request);
@@ -36,12 +38,22 @@ export const POST = withApiHandler(
       return body.response;
     }
 
-    const parsed = scoreSchema.safeParse(body.data);
+    const parsed = scoreBodySchema.safeParse(body.data);
     if (!parsed.success) {
-      return badRequest(parsed.error.issues[0]?.message ?? "Некорректные данные");
+      return badRequest(parsed.error.issues[0]?.message ?? msg.common.invalidPayload);
     }
 
-    const { score, sessionId, jumpTicks } = parsed.data;
+    const { score, sessionId, inputLog } = parsed.data;
+
+    const inputBytes = Buffer.byteLength(JSON.stringify(inputLog ?? null), "utf8");
+    if (inputBytes > gamePlugin.maxInputLogBytes) {
+      return badRequest(msg.game.inputLogTooLarge);
+    }
+
+    const inputParsed = gamePlugin.parseInputLog(inputLog);
+    if (!inputParsed.ok) {
+      return badRequest(inputParsed.message);
+    }
 
     await connectDB();
 
@@ -57,7 +69,7 @@ export const POST = withApiHandler(
         reason: "unknown-session",
         elapsedMs: null,
       });
-      return forbidden("Сначала начните игру");
+      return forbidden(msg.game.startFirst);
     }
 
     const elapsedMs = Date.now() - gameSession.startedAt.getTime();
@@ -70,7 +82,7 @@ export const POST = withApiHandler(
         reason: "duplicate-submit",
         elapsedMs,
       });
-      return forbidden("Результат этой партии уже засчитан");
+      return forbidden(msg.game.alreadySubmitted);
     }
 
     const validation = gamePlugin.validateScore(score, gameSession.startedAt);
@@ -88,7 +100,7 @@ export const POST = withApiHandler(
     if (gamePlugin.validateReplay) {
       const replayCheck = gamePlugin.validateReplay(
         gameSession.seed,
-        jumpTicks ?? [],
+        inputParsed.input,
         score,
       );
       if (!replayCheck.ok) {
@@ -115,32 +127,58 @@ export const POST = withApiHandler(
         reason: "duplicate-submit-race",
         elapsedMs,
       });
-      return forbidden("Результат этой партии уже засчитан");
+      return forbidden(msg.game.alreadySubmitted);
     }
 
-    const user = await User.findById(sessionUser.id);
-    if (!user) {
+    const userBefore = await User.findById(sessionUser.id).select(
+      "bestScore username",
+    );
+    if (!userBefore) {
       return unauthorized();
     }
 
-    const isNewRecord = score > user.bestScore;
-    if (isNewRecord) {
-      user.bestScore = score;
+    const order = gamePlugin.scoreOrder;
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: sessionUser.id },
+      [
+        {
+          $set: {
+            totalScore: { $add: ["$totalScore", score] },
+            bestScore:
+              order === "desc"
+                ? { $max: ["$bestScore", score] }
+                : {
+                    $cond: [
+                      { $eq: ["$bestScore", 0] },
+                      score,
+                      { $min: ["$bestScore", score] },
+                    ],
+                  },
+          },
+        },
+      ],
+      { returnDocument: "after", updatePipeline: true },
+    );
+    if (!updatedUser) {
+      return unauthorized();
     }
 
-    user.totalScore += score;
-    await user.save();
+    const isNewRecord = isBetterScore(userBefore.bestScore, score, order);
 
     if (isNewRecord) {
-      await upsertLeaderboardScore(user.username, user.bestScore);
+      await upsertLeaderboardScore(updatedUser.username, updatedUser.bestScore, order);
       await invalidateTop10();
     }
 
-    const { rank, nextUsername } = await computeRank(user.username, user.bestScore);
+    const { rank, nextUsername } = await computeRank(
+      updatedUser.username,
+      updatedUser.bestScore,
+    );
 
     return NextResponse.json({
-      bestScore: user.bestScore,
-      totalScore: user.totalScore,
+      bestScore: updatedUser.bestScore,
+      totalScore: updatedUser.totalScore,
       isNewRecord,
       rank,
       nextUsername,

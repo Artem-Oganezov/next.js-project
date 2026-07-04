@@ -23,11 +23,11 @@ describeRedis("Redis leaderboard cache", () => {
   });
 
   it("computes rank from ZSET", async () => {
-    await upsertLeaderboardScore("top", 500);
-    await upsertLeaderboardScore("mid", 200);
-    await upsertLeaderboardScore("me", 100);
+    await upsertLeaderboardScore("top", 500, "desc");
+    await upsertLeaderboardScore("mid", 200, "desc");
+    await upsertLeaderboardScore("me", 100, "desc");
 
-    const rank = await rankFromCache("me", 100);
+    const rank = await rankFromCache("me", 100, "desc");
 
     expect(rank.rank).toBe(3);
     expect(rank.nextUsername).toBe("mid");

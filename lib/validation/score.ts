@@ -1,24 +1,20 @@
 import { z } from "zod";
+import { msg } from "@/lib/i18n/messages";
 
-export const scoreSchema = z.object({
+/** Platform-level score payload. Input semantics are validated by gamePlugin. */
+export const scoreBodySchema = z.object({
   score: z
     .number()
-    .int("Счёт должен быть целым числом")
-    .min(0, "Счёт не может быть отрицательным")
-    .max(999_999, "Счёт не может превышать 999999"),
-  sessionId: z.string().regex(/^[0-9a-f]{24}$/i, "Некорректный идентификатор партии"),
-  // Лог прыжков (номера тиков) для серверной replay-валидации.
-  // Лимиты — только защита от мусорных payload; семантику проверяет движок.
-  jumpTicks: z
-    .array(
-      z
-        .number()
-        .int("Номер тика должен быть целым числом")
-        .min(0, "Номер тика не может быть отрицательным")
-        .max(10_000_000, "Некорректный номер тика"),
-    )
-    .max(10_000, "Слишком длинный лог прыжков")
-    .optional(),
+    .int("Score must be an integer")
+    .min(0, "Score cannot be negative")
+    .max(999_999, "Score cannot exceed 999999"),
+  sessionId: z.string().regex(/^[0-9a-f]{24}$/i, "Invalid session id"),
+  inputLog: z.unknown().optional(),
 });
 
-export type ScoreInput = z.infer<typeof scoreSchema>;
+export type ScoreBodyInput = z.infer<typeof scoreBodySchema>;
+
+/** @deprecated Use scoreBodySchema */
+export const scoreSchema = scoreBodySchema;
+
+export type ScoreInput = ScoreBodyInput;

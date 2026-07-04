@@ -3,6 +3,7 @@ export type User = {
   id: string;
   username: string;
   email: string;
+  emailVerified: boolean;
   bestScore: number;
   totalScore: number;
   unlockedSkins: string[];

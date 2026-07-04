@@ -14,7 +14,7 @@ export function resetRateLimitState(): void {
 }
 
 /**
- * Окно на Redis INCR + EXPIRE.
+ * Окно на Redis INCR + EXPIRE (атомарно через Lua).
  *
  * По умолчанию fail-open: если Redis недоступен, запрос пропускается —
  * лимитер не должен ронять API. Недоступность Redis видна через
@@ -30,14 +30,15 @@ export async function enforceRateLimit(
 
   try {
     const redis = getRedis();
-    const hits = await redis.incr(redisKey);
-
-    if (hits === 1) {
-      await redis.expire(redisKey, Math.ceil(windowMs / 1000));
-    }
+    const windowSec = Math.ceil(windowMs / 1000);
+    const hits = await redis.incrWithExpire(redisKey, windowSec);
 
     if (hits > maxRequests) {
-      const ttlSec = await redis.ttl(redisKey);
+      let ttlSec = await redis.ttl(redisKey);
+      if (ttlSec < 0) {
+        await redis.expire(redisKey, windowSec);
+        ttlSec = windowSec;
+      }
       incrementCounter("rate_limit_rejected_total", {
         key_prefix: key.split(":")[0] ?? key,
       });
