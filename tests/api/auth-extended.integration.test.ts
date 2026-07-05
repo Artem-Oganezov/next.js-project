@@ -81,7 +81,8 @@ describe("Extended auth API", () => {
     const verifyResponse = await verifyGet(
       new Request(`http://localhost/api/auth/verify-email?token=${token}`),
     );
-    expect(verifyResponse.status).toBe(200);
+    expect(verifyResponse.status).toBe(307);
+    expect(verifyResponse.headers.get("location")).toContain("/verify-email?status=success");
 
     const meAfter = await meGet(new Request("http://localhost/api/auth/me"));
     const afterBody = await parseJsonResponse<{ user: { emailVerified: boolean } }>(meAfter);

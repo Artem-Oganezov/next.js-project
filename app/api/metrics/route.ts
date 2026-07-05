@@ -9,7 +9,7 @@ export const GET = withApiHandler("metrics", async (request) => {
 
   // В production без ADMIN_SECRET метрики не отдаём (firewall scraper'а — ops).
   if (NODE_ENV === "production" && !ADMIN_SECRET) {
-    return unauthorized("Метрики не настроены");
+    return unauthorized("Metrics are not configured");
   }
 
   if (ADMIN_SECRET) {
