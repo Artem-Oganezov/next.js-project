@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withApiHandler } from "@/lib/api/handler";
+import { APP_VERSION } from "@/lib/config/version";
 import { connectDB } from "@/lib/db/mongoose";
 import { getCounter } from "@/lib/observability/metrics";
 import { getRedis } from "@/lib/redis";
@@ -31,6 +32,7 @@ export const GET = withApiHandler("health", async () => {
   return NextResponse.json(
     {
       status: ok ? (redisOk ? "ok" : "degraded") : "down",
+      version: APP_VERSION,
       mongo: mongoOk ? "connected" : "disconnected",
       redis: redisOk ? "connected" : "disconnected",
       timestamp: new Date().toISOString(),

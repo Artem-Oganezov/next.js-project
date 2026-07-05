@@ -34,6 +34,11 @@ export default function TermsPage() {
         </section>
 
         <section>
+          <h2>{ui.legal.termsSections.ads.title}</h2>
+          <p>{ui.legal.termsSections.ads.body}</p>
+        </section>
+
+        <section>
           <h2>{ui.legal.termsSections.liability.title}</h2>
           <p>{ui.legal.termsSections.liability.body}</p>
         </section>

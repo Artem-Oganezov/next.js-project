@@ -106,6 +106,14 @@ export const ui = {
         title: "Contact",
         body: "Add your support email or contact form URL here before launch.",
       },
+      ads: {
+        title: "Advertising",
+        body: "If you enable revive ads, third-party ad networks may set cookies or collect device identifiers to serve and measure ads. Update this section with your ad partners (e.g. Google Ad Manager), consent mechanism (CMP), and opt-out links required in your region.",
+      },
+      thirdParty: {
+        title: "Third-party services",
+        body: "The game may use MongoDB Atlas, Redis/Upstash, SMTP email, and hosting providers. Each processes data under their own policies. List them here before public launch.",
+      },
     },
     termsSections: {
       acceptance: {
@@ -119,6 +127,10 @@ export const ui = {
       conduct: {
         title: "Fair play",
         body: "Automated score submission, replay manipulation, and attempts to bypass server validation are prohibited. Scores may be rejected or accounts banned without notice.",
+      },
+      ads: {
+        title: "Ads and revive",
+        body: "Optional rewarded ads may let you continue a run once per session. Ad availability is not guaranteed. Manipulating or faking ad completion to obtain revives violates these terms.",
       },
       liability: {
         title: "Disclaimer",
@@ -149,7 +161,9 @@ export const ui = {
     watchAdContinue: "Watch ad & continue",
     saveScore: "Save score",
     adLoading: "Loading ad…",
+    adDismissed: "Ad closed — save your score or try again",
     reviveFailed: "Could not continue — save your score or try again",
+    reviveHintNoAd: "Save your score or start a new run.",
     ariaLabel: (name: string) => `Game ${name}`,
   },
 } as const;

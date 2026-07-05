@@ -6,6 +6,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 
 ### Added
 - **Revive after ad (stub):** first death shows continue overlay; `POST /api/game/revive` (once per session); `inputLog` supports `{ jumpTicks, reviveAtTick }`; deterministic `engine.revive()` for server replay.
+- **Ad provider layer:** `lib/client/ads` — `stub` / `slot` / `none` via `NEXT_PUBLIC_REVIVE_AD_PROVIDER`; integration guide [docs/ADS.md](docs/ADS.md).
+- **Legal stubs:** Privacy/Terms sections for ads and third-party services.
+- **Ops:** `GET /api/health` includes app `version`; session start rate-limit message in English.
 - **Auth pages for production:** `/reset-password`, `/verify-email`, forgot-password mode in login form (`AuthForm`).
 - **Verify email UX:** `GET /api/auth/verify-email` redirects to `/verify-email?status=success|error` instead of raw JSON.
 - **Live prod checklist:** [docs/LIVE-PROD.md](docs/LIVE-PROD.md).

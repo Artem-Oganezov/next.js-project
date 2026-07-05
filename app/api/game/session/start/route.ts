@@ -8,6 +8,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { gamePlugin } from "@/lib/game/plugin";
 import { GameSession } from "@/lib/models/GameSession";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { msg } from "@/lib/i18n/messages";
 
 const SESSION_EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 
@@ -26,7 +27,7 @@ export const POST = withApiHandler(
       RATE_LIMIT.SCORE_WINDOW_MS,
     );
     if (!userLimit.ok) {
-      return tooManyRequests("Слишком много запросов");
+      return tooManyRequests(msg.game.tooManyRequests);
     }
 
     await connectDB();

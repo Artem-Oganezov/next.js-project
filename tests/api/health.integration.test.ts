@@ -14,6 +14,7 @@ describe("Health API", () => {
     const response = await healthGet(new Request("http://localhost/api/health"));
     const body = (await response.json()) as {
       status: string;
+      version: string;
       mongo: string;
       redis: string;
       timestamp: string;
@@ -23,6 +24,7 @@ describe("Health API", () => {
     // сервис деградирует, но не падает — LB не выводит ноду.
     expect(response.status).toBe(200);
     expect(body.status).toBe("degraded");
+    expect(body.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(body.mongo).toBe("connected");
     expect(body.redis).toBe("disconnected");
     expect(new Date(body.timestamp).getTime()).not.toBeNaN();

@@ -24,7 +24,7 @@ Use this after local dev works and before pointing a real domain at the game.
 
 - [ ] Replace stub copy on `/privacy` and `/terms` (`lib/i18n/ui.ts` → `legal.*`)
 - [ ] Update [LICENSE](../LICENSE) jurisdiction and operator name
-- [ ] Uptime monitor on `GET /api/health` (expect `"status":"ok"`)
+- [ ] Uptime monitor on `GET /api/health` (expect `"status":"ok"`, check `version` matches deploy)
 
 ## Game & anti-cheat smoke test
 
@@ -35,7 +35,7 @@ Use this after local dev works and before pointing a real domain at the game.
 
 ## Optional next (monetization)
 
-- [ ] Real ad SDK (interstitial) wired to the revive button (`AD_STUB_MS` in `game/Game.tsx`)
+- [ ] Set `NEXT_PUBLIC_REVIVE_AD_PROVIDER=slot` and wire your network — see [ADS.md](ADS.md)
 - [ ] Privacy policy mentions ads / ad partners if applicable
 
 See also: [DEPLOY.md](DEPLOY.md), [VPS-DEPLOY.md](VPS-DEPLOY.md).

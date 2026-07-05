@@ -8,8 +8,9 @@ Principle: **1 repo = 1 game**. A new game is a new fork (see
 [docs/NEW_GAME.md](docs/NEW_GAME.md), ~2 hour checklist).
 
 Docs: [New game](docs/NEW_GAME.md) · [Deploy](docs/DEPLOY.md) ·
-[Live prod checklist](docs/LIVE-PROD.md) · [VPS + HTTPS](docs/VPS-DEPLOY.md) ·
-[Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md)
+[Live prod checklist](docs/LIVE-PROD.md) · [Revive ads](docs/ADS.md) ·
+[VPS + HTTPS](docs/VPS-DEPLOY.md) · [Architecture](docs/ARCHITECTURE.md) ·
+[Changelog](CHANGELOG.md)
 
 ## Features
 

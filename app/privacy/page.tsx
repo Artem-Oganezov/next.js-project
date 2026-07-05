@@ -34,6 +34,16 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2>{ui.legal.privacySections.ads.title}</h2>
+          <p>{ui.legal.privacySections.ads.body}</p>
+        </section>
+
+        <section>
+          <h2>{ui.legal.privacySections.thirdParty.title}</h2>
+          <p>{ui.legal.privacySections.thirdParty.body}</p>
+        </section>
+
+        <section>
           <h2>{ui.legal.privacySections.contact.title}</h2>
           <p>{ui.legal.privacySections.contact.body}</p>
         </section>
