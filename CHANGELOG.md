@@ -2,6 +2,17 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.6.0] — 2026-07-05
+
+### Added
+- **Auth pages for production:** `/reset-password`, `/verify-email`, forgot-password mode in login form (`AuthForm`).
+- **Verify email UX:** `GET /api/auth/verify-email` redirects to `/verify-email?status=success|error` instead of raw JSON.
+- **Live prod checklist:** [docs/LIVE-PROD.md](docs/LIVE-PROD.md).
+
+### Changed
+- README API table and deploy checklist updated for auth routes and email flows.
+- Version bumped to **1.6.0**.
+
 ## [1.5.0] — 2026-07-05
 
 ### Added

@@ -47,7 +47,11 @@ The API is stateless; sticky sessions are not required.
 
 - [ ] `/api/health` → `"status":"ok"`
 - [ ] Registration + login work; cookie is `Secure` (NODE_ENV=production)
-- [ ] Play a run: start → game over → score saved → leaderboard updated
+- [ ] Forgot password email → `/reset-password` completes reset
+- [ ] Email verification link → `/verify-email?status=success`
+- [ ] Play a run: start → first death → save score → leaderboard updated
 - [ ] Resubmitting the same run is rejected (stderr log with `anti-cheat`)
 - [ ] Logs do not show `rate-limit ... Redis unavailable`
 - [ ] `/privacy` and `/terms` pages are replaced with real legal text before launch
+
+Full live-game checklist: [LIVE-PROD.md](LIVE-PROD.md).

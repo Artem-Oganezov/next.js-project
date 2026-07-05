@@ -8,8 +8,8 @@ Principle: **1 repo = 1 game**. A new game is a new fork (see
 [docs/NEW_GAME.md](docs/NEW_GAME.md), ~2 hour checklist).
 
 Docs: [New game](docs/NEW_GAME.md) · [Deploy](docs/DEPLOY.md) ·
-[VPS + HTTPS](docs/VPS-DEPLOY.md) · [Architecture](docs/ARCHITECTURE.md) ·
-[Changelog](CHANGELOG.md)
+[Live prod checklist](docs/LIVE-PROD.md) · [VPS + HTTPS](docs/VPS-DEPLOY.md) ·
+[Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md)
 
 ## Features
 
@@ -96,10 +96,10 @@ Remaining boundary: replay proves the run followed game rules, not that a human 
 | `POST`       | `/api/auth/login`                 | Log in                                           |
 | `POST`       | `/api/auth/logout`                | Log out                                          |
 | `GET`        | `/api/auth/me`                    | Current user                                     |
-| `POST`       | `/api/auth/forgot-password`       | Send password reset email                          |
-| `POST`       | `/api/auth/reset-password`        | Reset password with token                        |
+| `POST`       | `/api/auth/forgot-password`       | Send password reset email → `/reset-password`    |
+| `POST`       | `/api/auth/reset-password`        | Reset password with token (also `/reset-password`) |
 | `POST`       | `/api/auth/resend-verification`   | Resend email verification (authenticated)        |
-| `GET`        | `/api/auth/verify-email`          | Verify email with token                          |
+| `GET`        | `/api/auth/verify-email`          | Verify email → redirect `/verify-email?status=` |
 | `PUT`        | `/api/auth/password`              | Change password (authenticated)                  |
 | `DELETE`     | `/api/auth/account`               | Delete account (authenticated)                   |
 | `POST`       | `/api/game/session/start`         | Start run → `sessionId` + `seed`                   |
