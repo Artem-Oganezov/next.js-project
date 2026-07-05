@@ -9,8 +9,8 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Реальные значения приходят в runtime; заглушки нужны, чтобы next build
-# не падал на валидации env при пререндере.
+# Real values are provided at runtime; placeholders prevent next build
+# from failing env validation during prerender.
 ENV MONGODB_URI=mongodb://build-placeholder:27017/build \
     AUTH_SECRET=build-placeholder-secret-32-characters!! \
     REDIS_URL=redis://build-placeholder:6379

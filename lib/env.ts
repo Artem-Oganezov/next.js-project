@@ -10,7 +10,7 @@ const envSchema = z
         "MONGODB_URI must be a valid MongoDB connection string",
       ),
     AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
-    // Вариант 1 (VPS / Docker): обычный Redis по TCP.
+    // Option 1 (VPS / Docker): standard Redis over TCP.
     REDIS_URL: z
       .string()
       .refine(
@@ -18,7 +18,7 @@ const envSchema = z
         "REDIS_URL must start with redis:// or rediss://",
       )
       .optional(),
-    // Вариант 2 (serverless): Upstash REST API.
+    // Option 2 (serverless): Upstash REST API.
     UPSTASH_REDIS_REST_URL: z
       .string()
       .refine(
@@ -27,13 +27,13 @@ const envSchema = z
       )
       .optional(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
-    // Fail-closed: при недоступном Redis запросы под rate limit получают 429
-    // вместо пропуска. По умолчанию false (fail-open, лимитер не роняет API).
+    // Fail-closed: when Redis is unavailable, rate-limited requests get 429
+    // instead of being allowed through. Default false (fail-open; limiter does not break the API).
     RATE_LIMIT_FAIL_CLOSED: z
       .enum(["true", "false"])
       .optional()
       .transform((value) => value === "true"),
-    // Секрет для /api/admin/* и опциональной защиты /api/metrics (min 32 символа).
+    // Secret for /api/admin/* and optional /api/metrics protection (min 32 characters).
     ADMIN_SECRET: z.string().min(32).optional(),
     APP_URL: z.string().url("APP_URL must be a valid URL").optional(),
     SMTP_HOST: z.string().min(1).optional(),

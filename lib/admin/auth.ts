@@ -4,7 +4,7 @@ import { getEnv } from "@/lib/env";
 import { secureCompare } from "@/lib/security/secure-compare";
 
 /**
- * Проверка секрета админки: заголовок `X-Admin-Secret` или
+ * Admin secret check: `X-Admin-Secret` header or
  * `Authorization: Bearer <secret>`.
  */
 export function requireAdminSecret(request: Request): Response | null {

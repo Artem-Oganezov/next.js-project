@@ -45,8 +45,8 @@ export async function createSession(userId: string | Types.ObjectId): Promise<vo
     expiresAt,
   });
 
-  // Кап одновременных сессий: старейшие сверх лимита гасятся, чтобы
-  // забытые куки (чужой компьютер и т.п.) не жили валидными до конца TTL.
+  // Session cap: oldest sessions beyond the limit are revoked so
+  // forgotten cookies (another computer, etc.) do not stay valid until TTL expires.
   const staleSessions = await Session.find({ userId })
     .sort({ expiresAt: -1 })
     .skip(MAX_SESSIONS_PER_USER)

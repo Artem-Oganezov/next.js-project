@@ -8,17 +8,17 @@ const FAIL_CLOSED_RETRY_AFTER_SEC = 30;
 
 let redisFailureLogged = false;
 
-/** Сброс флага логирования (тесты). */
+/** Reset logging flag (tests). */
 export function resetRateLimitState(): void {
   redisFailureLogged = false;
 }
 
 /**
- * Окно на Redis INCR + EXPIRE (атомарно через Lua).
+ * Window via Redis INCR + EXPIRE (atomic via Lua).
  *
- * По умолчанию fail-open: если Redis недоступен, запрос пропускается —
- * лимитер не должен ронять API. Недоступность Redis видна через
- * GET /api/health. Для жёсткого режима (429 при падении Redis) выставь
+ * Default fail-open: if Redis is unavailable, the request is allowed —
+ * the limiter must not break the API. Redis unavailability is visible via
+ * GET /api/health. For strict mode (429 when Redis is down) set
  * RATE_LIMIT_FAIL_CLOSED=true.
  */
 export async function enforceRateLimit(

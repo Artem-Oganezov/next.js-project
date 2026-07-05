@@ -6,8 +6,8 @@ import { parseJsonBody } from "@/lib/api/http";
 import { getSessionUser } from "@/lib/auth/session";
 import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
-// Импорт напрямую из game/skins (не из @/game): серверному роуту
-// не нужен клиентский компонент Game.
+// Import directly from game/skins (not @/game): the server route
+// does not need the client Game component.
 import { SKINS } from "@/game/skins";
 import { User } from "@/lib/models/User";
 import { msg } from "@/lib/i18n/messages";

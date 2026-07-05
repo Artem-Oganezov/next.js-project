@@ -1,6 +1,6 @@
 import { SCORE_PER_FRAME } from "@/game/score-config";
 
-/** Константы канваса и физики Dino Run. При смене игры заменяются целиком. */
+/** Dino Run canvas and physics constants. Replace entirely when swapping games. */
 export const GAME_CONFIG = {
   CANVAS_WIDTH: 800,
   CANVAS_HEIGHT: 200,

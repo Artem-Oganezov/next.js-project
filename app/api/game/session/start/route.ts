@@ -20,7 +20,7 @@ export const POST = withApiHandler(
       return unauthorized();
     }
 
-    // Лимит и по userId: IP-лимит не спасает от одного залогиненного бота.
+    // Rate limit by userId too: IP limits do not stop a single logged-in bot.
     const userLimit = await enforceRateLimit(
       `game:session:user:${sessionUser.id}`,
       RATE_LIMIT.SCORE_MAX_REQUESTS,
@@ -32,7 +32,7 @@ export const POST = withApiHandler(
 
     await connectDB();
 
-    // Одна активная партия на юзера: старые незакрытые сессии аннулируются.
+    // One active run per user: older unsubmitted sessions are invalidated.
     await GameSession.deleteMany({
       userId: sessionUser.id,
       scoreSubmitted: false,

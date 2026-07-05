@@ -48,7 +48,7 @@ describe("Session cap", () => {
 
     const firstToken = await getCurrentSessionToken();
 
-    // Ещё MAX_SESSIONS_PER_USER + 1 логинов: суммарно сессий больше капа.
+    // MAX_SESSIONS_PER_USER + 1 more logins: total sessions exceed the cap.
     for (let i = 0; i < MAX_SESSIONS_PER_USER + 1; i++) {
       const loginResponse = await loginPost(
         jsonRequest("http://localhost/api/auth/login", "POST", {
@@ -66,11 +66,11 @@ describe("Session cap", () => {
     const sessionCount = await Session.countDocuments({ userId: user!._id });
     expect(sessionCount).toBe(MAX_SESSIONS_PER_USER);
 
-    // Свежая сессия работает.
+    // Newest session works.
     const meWithNewest = await meGet(new Request("http://localhost/api/auth/me"));
     expect(meWithNewest.status).toBe(200);
 
-    // Самая первая сессия вытеснена капом — её кука больше не валидна.
+    // The first session was evicted by the cap — its cookie is no longer valid.
     const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE_NAME, firstToken);
     const meWithOldest = await meGet(new Request("http://localhost/api/auth/me"));

@@ -11,11 +11,11 @@ return c
 `;
 
 /**
- * Единый интерфейс поверх двух транспортов:
+ * Unified interface over two transports:
  * - REDIS_URL (ioredis, TCP) — VPS / Docker / managed Redis;
- * - UPSTASH_REDIS_REST_* (REST) — serverless-деплой.
+ * - UPSTASH_REDIS_REST_* (REST) — serverless deployment.
  *
- * Остальной код зависит только от этого интерфейса.
+ * The rest of the codebase depends only on this interface.
  */
 export type RedisClient = {
   ping(): Promise<void>;
@@ -29,9 +29,9 @@ export type RedisClient = {
   ttl(key: string): Promise<number>;
   zadd(key: string, entries: { score: number; member: string }[]): Promise<void>;
   zcard(key: string): Promise<number>;
-  /** Сколько элементов имеют score строго больше указанного. */
+  /** How many members have a score strictly greater than the given value. */
   zcountAbove(key: string, score: number): Promise<number>;
-  /** Первый member со score строго больше указанного (ближайший сверху). */
+  /** First member with a score strictly greater than the given value (nearest above). */
   zfirstAbove(key: string, score: number): Promise<string | null>;
   /** SET key value NX EX — returns true when the key was created. */
   setNx(key: string, value: string, exSeconds: number): Promise<boolean>;
@@ -46,7 +46,7 @@ function createIoRedisClient(url: string): RedisClient {
     maxRetriesPerRequest: 1,
     enableOfflineQueue: false,
   });
-  // Без обработчика ioredis бросает unhandled 'error' при недоступном Redis.
+  // Without a handler, ioredis throws an unhandled 'error' when Redis is unavailable.
   client.on("error", () => {});
 
   return {
@@ -207,14 +207,14 @@ export function getRedis(): RedisClient {
       env.UPSTASH_REDIS_REST_TOKEN,
     );
   } else {
-    // getEnv() гарантирует один из вариантов; ветка недостижима.
+    // getEnv() guarantees one of the options; this branch is unreachable.
     throw new Error("Redis is not configured");
   }
 
   return cachedClient;
 }
 
-/** Сброс singleton-клиента (тесты, смена REDIS_URL). */
+/** Reset singleton client (tests, REDIS_URL change). */
 export function resetRedisCache(): void {
   cachedClient = null;
 }

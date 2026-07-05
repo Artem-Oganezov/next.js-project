@@ -16,7 +16,7 @@ test.describe("Game E2E", () => {
 
     await expect(page.getByTestId("game-canvas")).toBeVisible();
 
-    // Без прыжков дино врезается в первый кактус (~3–8 с).
+    // Without jumps the dino hits the first cactus (~3–8 s).
     await expect(page.getByTestId("revive-offer-modal")).toBeVisible({
       timeout: 25_000,
     });
@@ -26,7 +26,7 @@ test.describe("Game E2E", () => {
     await expect(page.getByTestId("game-over-modal")).toBeVisible();
 
     await expect(page.getByText("Game over!")).toBeVisible();
-    // Ошибка сохранения не должна появиться при рабочем API.
+    // Save error should not appear when the API is working.
     await expect(page.getByRole("alert")).toHaveCount(0);
   });
 });

@@ -3,7 +3,7 @@ import { createDinoEngine } from "@/game/engine";
 
 const { DINO_X, DINO_WIDTH } = GAME_CONFIG;
 
-/** Запас в тиках до кактуса, при котором автоплеер прыгает. */
+/** Tick margin before a cactus at which the autoplayer jumps. */
 const JUMP_LEAD_TICKS = 15;
 const MAX_PLAY_TICKS = 200_000;
 
@@ -14,9 +14,9 @@ export type HonestRun = {
 };
 
 /**
- * Честная партия жадным автоплеером: прыгает через кактусы, пока счёт
- * меньше targetScore, затем перестаёт и врезается в следующий кактус.
- * Итоговый счёт ≥ targetScore (плюс небольшой хвост до столкновения).
+ * Fair run with a greedy autoplayer: jumps over cacti while score
+ * is below targetScore, then stops and hits the next cactus.
+ * Final score ≥ targetScore (plus a small tail until collision).
  */
 export function playHonestGame(seed: string, targetScore: number): HonestRun {
   const engine = createDinoEngine(seed);

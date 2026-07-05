@@ -70,7 +70,7 @@ const userSchema = new Schema<IUser>(
   { timestamps: true },
 );
 
-// Лидерборд и вычисление ранга сортируют/фильтруют по bestScore.
+// Leaderboard and rank computation sort/filter by bestScore.
 userSchema.index({ bestScore: -1 });
 
 export const User: Model<IUser> =

@@ -57,10 +57,10 @@ async function rankFromMongo(bestScore: number, order: ScoreOrder): Promise<Rank
 }
 
 /**
- * Позиция юзера в общем рейтинге и username ближайшего соперника сверху.
+ * User position in the global leaderboard and username of the nearest rival above.
  *
- * Основной путь — Redis ZSET (O(log N)); пустой ZSET один раз засеивается
- * из Mongo. При недоступном Redis — прямой подсчёт в Mongo по индексу.
+ * Primary path — Redis ZSET (O(log N)); an empty ZSET is seeded once from Mongo.
+ * When Redis is unavailable — direct count in Mongo via index.
  */
 export async function computeRank(
   username: string,

@@ -13,8 +13,8 @@ export type SuspiciousSubmitDetails = {
 };
 
 /**
- * Лог в stderr + счётчик + запись в Mongo для админки.
- * Ошибки персистенции не пробрасываются — сабмит уже отклонён.
+ * Log to stderr + counter + Mongo record for the admin panel.
+ * Persistence errors are not propagated — the submit is already rejected.
  */
 export async function recordSuspiciousSubmit(
   details: SuspiciousSubmitDetails,

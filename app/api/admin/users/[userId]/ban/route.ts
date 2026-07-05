@@ -44,7 +44,7 @@ function adminUserHandler(scope: string, action: "ban" | "unban", userId: string
       );
 
       if (!user) {
-        return notFound("Пользователь не найден");
+        return notFound("User not found");
       }
 
       await Session.deleteMany({ userId: user._id });
@@ -67,7 +67,7 @@ function adminUserHandler(scope: string, action: "ban" | "unban", userId: string
     );
 
     if (!user) {
-      return notFound("Пользователь не найден");
+      return notFound("User not found");
     }
 
     return NextResponse.json({

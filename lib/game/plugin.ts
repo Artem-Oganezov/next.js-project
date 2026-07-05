@@ -30,16 +30,15 @@ export type ReplayValidationResult =
   | { ok: false; code: string; message: string };
 
 /**
- * Единственная game-specific точка бэкенда.
+ * The only game-specific backend entry point.
  *
- * Чтобы запустить этот бэкенд под другую игру, достаточно заменить
- * содержимое этого файла (и фронтенд): API-роуты, авторизация,
- * лидерборд и rate limiting игру не знают.
+ * To run this backend for a different game, replace the contents of this file
+ * (and the frontend): API routes, auth, leaderboard, and rate limiting are game-agnostic.
  */
 export type GamePlugin = {
   id: string;
   displayName: string;
-  /** desc — больше лучше; asc — меньше лучше (time attack). */
+  /** desc — higher is better; asc — lower is better (time attack). */
   scoreOrder: ScoreOrder;
   scoreRules: ScoreRulesConfig;
   /** Max serialized inputLog size in bytes (platform enforces before plugin parse). */
@@ -52,9 +51,9 @@ export type GamePlugin = {
     options?: ValidateGameScoreOptions,
   ): ScoreValidationResult;
   /**
-   * Точная replay-валидация: сервер прогоняет партию по seed и логу
-   * ввода и сверяет счёт бит-в-бит. Опциональна — игра без
-   * детерминированного движка полагается только на эвристики выше.
+   * Exact replay validation: the server replays the run from seed and input log
+   * and verifies the score bit-for-bit. Optional — games without a deterministic
+   * engine rely only on the heuristics above.
    */
   validateReplay?(
     seed: string,

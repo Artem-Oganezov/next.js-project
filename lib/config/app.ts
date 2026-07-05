@@ -1,14 +1,14 @@
 import { gameMeta } from "@/game/meta";
 
-/** Название приложения берётся из игрового модуля — см. game/meta.ts. */
+/** Application name comes from the game module — see game/meta.ts. */
 export const APP_NAME = gameMeta.displayName;
 
 export const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7;
 
 /**
- * Максимум одновременных сессий на юзера (мультиустройство остаётся).
- * При создании новой сессии старейшие сверх лимита удаляются — утерянные
- * куки не живут валидными до конца TTL.
+ * Maximum concurrent sessions per user (multi-device still supported).
+ * When creating a new session, oldest sessions beyond the limit are removed —
+ * lost cookies do not stay valid until TTL expires.
  */
 export const MAX_SESSIONS_PER_USER = 5;
 

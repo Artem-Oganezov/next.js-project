@@ -19,8 +19,8 @@ export function withApiHandler(
   rateLimit?: RateLimitOptions,
 ): RouteHandler {
   return async (request: Request) => {
-    // requestId связывает все логи одного запроса (и отдаётся клиенту
-    // в заголовке — удобно сопоставлять баг-репорты с логами сервера).
+    // requestId links all logs for one request (also returned to the client
+    // in a header — useful for matching bug reports to server logs).
     const requestId = randomUUID();
 
     try {

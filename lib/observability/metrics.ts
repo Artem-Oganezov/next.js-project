@@ -1,6 +1,6 @@
 /**
- * In-process счётчики для мониторинга (Prometheus text format).
- * Для multi-instance деплоя агрегируйте на стороне scraper'а или шлите в OTel.
+ * In-process counters for monitoring (Prometheus text format).
+ * For multi-instance deployments, aggregate on the scraper side or send to OTel.
  */
 type Labels = Record<string, string>;
 
@@ -22,12 +22,12 @@ export function getCounter(name: string, labels: Labels = {}): number {
   return counters.get(labelKey(name, labels)) ?? 0;
 }
 
-/** Сброс всех счётчиков (тесты). */
+/** Reset all counters (tests). */
 export function resetMetrics(): void {
   counters.clear();
 }
 
-/** Prometheus exposition format 0.0.4 (subset — только counters). */
+/** Prometheus exposition format 0.0.4 (subset — counters only). */
 export function renderPrometheusMetrics(): string {
   const names = new Set<string>();
   for (const key of counters.keys()) {

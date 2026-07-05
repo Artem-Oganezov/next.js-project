@@ -24,8 +24,8 @@ export function clearTestCookies(): void {
 }
 
 process.env.AUTH_SECRET = "vitest-auth-secret-at-least-32-chars";
-// Заведомо недоступный Redis: код обязан работать через Mongo fallback
-// (rate limit — fail-open, rank — прямой подсчёт в Mongo).
+// Intentionally unavailable Redis: code must work via Mongo fallback
+// (rate limit — fail-open, rank — direct count in Mongo).
 process.env.REDIS_URL = "redis://127.0.0.1:6399";
 
 const mongoServer = await MongoMemoryServer.create();

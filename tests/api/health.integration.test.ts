@@ -20,8 +20,8 @@ describe("Health API", () => {
       timestamp: string;
     };
 
-    // В тестах Redis намеренно недоступен (см. tests/setup.ts):
-    // сервис деградирует, но не падает — LB не выводит ноду.
+    // In tests Redis is intentionally unavailable (see tests/setup.ts):
+    // the service degrades but does not crash — the load balancer keeps the node in rotation.
     expect(response.status).toBe(200);
     expect(body.status).toBe("degraded");
     expect(body.version).toMatch(/^\d+\.\d+\.\d+$/);

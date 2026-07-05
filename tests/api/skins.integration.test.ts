@@ -13,7 +13,7 @@ let skinsPut: SkinsRoute["PUT"];
 
 const paidSkin = SKINS.find((skin) => skin.price > 0);
 if (!paidSkin) {
-  throw new Error("Тест требует хотя бы один платный скин в game/skins.ts");
+  throw new Error("Test requires at least one paid skin in game/skins.ts");
 }
 
 beforeAll(async () => {

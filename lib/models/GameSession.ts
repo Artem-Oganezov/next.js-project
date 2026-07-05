@@ -3,12 +3,12 @@ import mongoose, { Schema, type Document, type Model, type Types } from "mongoos
 export interface IGameSession extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
-  /** Seed для детерминированной генерации препятствий на клиенте. */
+  /** Seed for deterministic obstacle generation on the client. */
   seed: string;
   startedAt: Date;
-  /** Партия одноразовая: submit атомарно переводит флаг в true. */
+  /** One-time run: submit atomically sets this flag to true. */
   scoreSubmitted: boolean;
-  /** Игрок использовал revive (реклама) — не более одного раза за сессию. */
+  /** Player used revive (ad) — at most once per session. */
   reviveUsed: boolean;
   expiresAt: Date;
 }

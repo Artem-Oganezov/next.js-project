@@ -1,4 +1,4 @@
-/** Публичный юзер (общий для shell и API, не зависит от игры). */
+/** Public user (shared by shell and API, game-agnostic). */
 export type User = {
   id: string;
   username: string;

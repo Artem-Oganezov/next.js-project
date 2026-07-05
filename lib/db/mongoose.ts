@@ -40,7 +40,7 @@ export async function connectDB(): Promise<typeof mongoose> {
   }
 }
 
-/** Сброс кэша подключения (тесты). */
+/** Reset connection cache (tests). */
 export function resetDbCache(): void {
   cached.conn = null;
   cached.promise = null;

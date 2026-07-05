@@ -1,9 +1,8 @@
 /**
- * Детерминированный PRNG из строкового seed (xmur3 → mulberry32).
+ * Deterministic PRNG from a string seed (xmur3 → mulberry32).
  *
- * Сервер выдаёт seed при старте партии, клиент генерирует из него
- * препятствия. Одинаковый seed — одинаковая партия: фундамент для
- * серверной replay-валидации в будущих играх.
+ * The server issues a seed at run start; the client generates obstacles from it.
+ * Same seed — same run: foundation for server-side replay validation in future games.
  */
 export function createSeededRandom(seed: string): () => number {
   let h = 1779033703 ^ seed.length;

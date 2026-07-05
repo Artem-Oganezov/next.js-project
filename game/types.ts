@@ -1,13 +1,13 @@
-/** Игровые типы Dino Run. При смене игры заменяются целиком. */
+/** Dino Run game types. Replace entirely when swapping games. */
 
-/** Кактус-препятствие: появляется справа, уходит влево. */
+/** Cactus obstacle: spawns on the right, moves left. */
 export type Cactus = {
   x: number;
   width: number;
   height: number;
 };
 
-/** Состояние динозавра: вертикальная позиция и скорость. */
+/** Dinosaur state: vertical position and velocity. */
 export type DinoState = {
   y: number;
   velocityY: number;

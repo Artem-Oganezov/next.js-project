@@ -7,7 +7,7 @@ import { getCounter, renderPrometheusMetrics } from "@/lib/observability/metrics
 export const GET = withApiHandler("metrics", async (request) => {
   const { ADMIN_SECRET, NODE_ENV } = getEnv();
 
-  // В production без ADMIN_SECRET метрики не отдаём (firewall scraper'а — ops).
+  // In production without ADMIN_SECRET, metrics are not exposed (scraper firewall — ops).
   if (NODE_ENV === "production" && !ADMIN_SECRET) {
     return unauthorized("Metrics are not configured");
   }

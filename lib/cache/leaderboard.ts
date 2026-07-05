@@ -12,7 +12,7 @@ export type LeaderboardEntry = {
   activeSkin: string;
 };
 
-/** Кэш топ-10: null — промах или Redis недоступен (иди в Mongo). */
+/** Top-10 cache: null — miss or Redis unavailable (fall back to Mongo). */
 export async function getCachedTop10(): Promise<LeaderboardEntry[] | null> {
   try {
     const raw = await getRedis().get(TOP10_KEY);
@@ -26,7 +26,7 @@ export async function setCachedTop10(entries: LeaderboardEntry[]): Promise<void>
   try {
     await getRedis().setEx(TOP10_KEY, JSON.stringify(entries), TOP10_TTL_SEC);
   } catch {
-    // Redis недоступен — кэш просто не работает, ответ валиден из Mongo
+    // Redis unavailable — cache simply does not work; response is still valid from Mongo
   }
 }
 
@@ -34,13 +34,13 @@ export async function invalidateTop10(): Promise<void> {
   try {
     await getRedis().del(TOP10_KEY);
   } catch {
-    // истечёт по TTL
+    // expires via TTL
   }
 }
 
 /**
- * ZSET всех результатов (member = username, score = normalized bestScore).
- * Обновляется при каждом новом рекорде; используется для O(log N) ранга.
+ * ZSET of all scores (member = username, score = normalized bestScore).
+ * Updated on each new record; used for O(log N) rank.
  */
 export async function upsertLeaderboardScore(
   username: string,
@@ -52,7 +52,7 @@ export async function upsertLeaderboardScore(
       { score: toLeaderboardKey(bestScore, order), member: username },
     ]);
   } catch {
-    // ранг посчитается через Mongo fallback
+    // rank will be computed via Mongo fallback
   }
 }
 
@@ -73,7 +73,7 @@ export async function leaderboardSize(): Promise<number> {
   return getRedis().zcard(SCORES_KEY);
 }
 
-/** Ранг из ZSET. Бросает исключение, если Redis недоступен. */
+/** Rank from ZSET. Throws if Redis is unavailable. */
 export async function rankFromCache(
   username: string,
   bestScore: number,

@@ -1,15 +1,15 @@
 /**
- * Контракт между shell (AuthGate) и игровым компонентом.
+ * Contract between shell (AuthGate) and the game component.
  *
- * Любая игра на этом шаблоне обязана:
- * 1. Принимать эти props (лишние можно игнорировать).
- * 2. Перед началом партии вызвать api.startGameSession() и вести партию
- *    детерминированно от полученного seed (см. game/engine.ts).
- * 3. Записывать лог ввода (формат задаёт игра) — он нужен серверной
- *    replay-валидации.
- * 4. На game over вызвать api.submitScore(score, sessionId, inputLog).
+ * Any game on this template must:
+ * 1. Accept these props (extra props may be ignored).
+ * 2. Before starting a run, call api.startGameSession() and run deterministically
+ *    from the returned seed (see game/engine.ts).
+ * 3. Record the input log (format defined by the game) — required for server-side
+ *    replay validation.
+ * 4. On game over, call api.submitScore(score, sessionId, inputLog).
  *
- * Shell не знает название игры — он рендерит <Game /> из @/game.
+ * The shell does not know the game name — it renders <Game /> from @/game.
  */
 export type ScoreSavedResult = {
   bestScore: number;
@@ -17,16 +17,16 @@ export type ScoreSavedResult = {
 };
 
 export type GameComponentProps = {
-  /** Никнейм для topbar (опционально). */
+  /** Nickname for topbar (optional). */
   username?: string;
-  /** Текущий рекорд юзера (для отображения). */
+  /** User's current record (for display). */
   initialBestScore?: number;
-  /** Цвет активного скина; игнорируй, если скины выключены. */
+  /** Active skin color; ignore if skins are disabled. */
   activeSkinColor?: string;
-  /** Вызвать после подтверждённого сервером сабмита счёта. */
+  /** Called after a server-confirmed score submit. */
   onScoreSaved?: (result: ScoreSavedResult) => void;
-  /** Кнопка «Назад» в shell. */
+  /** Back button in the shell. */
   onBack?: () => void;
-  /** Переход на экран рейтинга (game over). */
+  /** Navigate to the leaderboard screen (game over). */
   onOpenLeaderboard?: () => void;
 };

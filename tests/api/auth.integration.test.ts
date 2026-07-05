@@ -56,9 +56,9 @@ async function backdateGameSession(
 }
 
 /**
- * Честная партия: старт сессии, прогон автоплеером до targetScore,
- * бэкдейт startedAt на фактическую длительность партии.
- * Возвращает данные для валидного сабмита.
+ * Fair run: start session, autoplay to targetScore,
+ * backdate startedAt to the actual run duration.
+ * Returns data for a valid submit.
  */
 async function playAndBackdate(targetScore: number): Promise<{
   sessionId: string;
@@ -269,8 +269,8 @@ describe("Game score API", () => {
     const { sessionId } = await startGameSession();
     await backdateGameSession(sessionId, 30);
 
-    // 100 очков проходят эвристику (18/сек × 30с), но replay по seed
-    // с пустым логом прыжков даёт другой счёт.
+    // 100 points pass the heuristic (18/sec × 30s), but replay from seed
+    // with an empty jump log yields a different score.
     const response = await scorePost(
       jsonRequest("http://localhost/api/game/score", "POST", {
         score: 100,
@@ -338,7 +338,7 @@ describe("Game score API", () => {
       }),
     );
 
-    // Партия 1: рекорд (~50+).
+    // Run 1: record (~50+).
     const runA = await playAndBackdate(50);
     const first = await scorePost(
       jsonRequest("http://localhost/api/game/score", "POST", runA),
@@ -353,8 +353,8 @@ describe("Game score API", () => {
     expect(firstBody.body.totalScore).toBe(runA.score);
     expect(firstBody.body.isNewRecord).toBe(true);
 
-    // Партия 2: без прыжков — смерть на первом кактусе, счёт заведомо
-    // меньше партии 1 (< 50): рекорд не обновляется.
+    // Run 2: no jumps — death on the first cactus, score is intentionally
+    // below run 1 (< 50): record is not updated.
     const runB = await playAndBackdate(0);
     expect(runB.score).toBeLessThan(runA.score);
     const second = await scorePost(
@@ -370,7 +370,7 @@ describe("Game score API", () => {
     expect(secondBody.body.totalScore).toBe(runA.score + runB.score);
     expect(secondBody.body.isNewRecord).toBe(false);
 
-    // Партия 3: новый рекорд (~120+ > партии 1).
+    // Run 3: new record (~120+ > run 1).
     const runC = await playAndBackdate(120);
     expect(runC.score).toBeGreaterThan(runA.score);
     const third = await scorePost(

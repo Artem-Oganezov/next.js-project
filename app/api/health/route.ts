@@ -26,7 +26,7 @@ async function checkRedis(): Promise<boolean> {
 export const GET = withApiHandler("health", async () => {
   const [mongoOk, redisOk] = await Promise.all([checkMongo(), checkRedis()]);
 
-  // Redis деградирует сервис (нет кэша и rate limit), но не роняет его.
+  // Redis degrades the service (no cache and rate limit) but does not take it down.
   const ok = mongoOk;
 
   return NextResponse.json(

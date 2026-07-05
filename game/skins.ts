@@ -1,14 +1,14 @@
 /**
- * Скины игры (опционально). Если gameMeta.features.skins === false,
- * UI скинов скрыт — оставь только default.
+ * Game skins (optional). If gameMeta.features.skins === false,
+ * the skins UI is hidden — keep only default.
  *
- * Читается и сервером (app/api/skins) и клиентом — только чистые данные.
+ * Read by both server (app/api/skins) and client — pure data only.
  */
 export type SkinDefinition = {
   id: string;
   name: string;
   color: string;
-  /** Цена в totalScore; 0 — доступен сразу. */
+  /** Price in totalScore; 0 — available immediately. */
   price: number;
 };
 

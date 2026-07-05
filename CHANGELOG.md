@@ -38,94 +38,94 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 ## [1.4.0] — 2026-07-04
 
 ### Added
-- **Playwright E2E** (`e2e/`) — регистрация, логин, полный игровой цикл до
-  game over; отдельный job в CI с Mongo + Redis.
+- **Playwright E2E** (`e2e/`) — registration, login, full game loop through
+  game over; separate CI job with Mongo + Redis.
 - **Redis integration tests** (`npm run test:redis`, `vitest.redis.config.ts`) —
-  ZSET ранга, кэш топ-10, реальный rate limit.
-- **Observability:** in-process счётчики, `GET /api/metrics` (Prometheus /
-  JSON), сводка в `GET /api/health`.
-- **Админка:** `/admin`, `GET /api/admin/submissions`, бан/разбан пользователя;
-  подозрительные сабмиты пишутся в MongoDB (`SuspiciousSubmit`).
-- Prettier (`npm run format`, `format:check` в CI).
-- `ADMIN_SECRET` в env для админ-API и защиты метрик в production.
+  rank ZSET, top-10 cache, real rate limit.
+- **Observability:** in-process counters, `GET /api/metrics` (Prometheus /
+  JSON), summary in `GET /api/health`.
+- **Admin panel:** `/admin`, `GET /api/admin/submissions`, user ban/unban;
+  suspicious submits are stored in MongoDB (`SuspiciousSubmit`).
+- Prettier (`npm run format`, `format:check` in CI).
+- `ADMIN_SECRET` in env for admin API and metrics protection in production.
 
 ### Changed
-- Anti-cheat логи дублируются в БД (не только stderr).
-- Бан пользователя: блокировка login/me, сброс сессий.
+- Anti-cheat logs are duplicated to the DB (not only stderr).
+- User ban: blocks login/me, clears sessions.
 
 ## [1.3.0] — 2026-07-04
 
 ### Added
 
-- **Серверная replay-валидация счёта.** Игра переведена на
-  детерминированный движок (`game/engine.ts`, fixed timestep 60 тиков/сек,
-  препятствия из серверного seed). Клиент шлёт лог прыжков (`jumpTicks`),
-  сервер прогоняет ту же партию и сверяет счёт бит-в-бит
-  (`gamePlugin.validateReplay`; опционален для игр без движка).
-- Тесты: детерминизм движка, replay-отклонение правдоподобного счёта
-  с подделанным логом, автоплеер для честных партий в интеграционных
-  тестах — 60 тестов суммарно.
+- **Server-side score replay validation.** The game uses a
+  deterministic engine (`game/engine.ts`, fixed timestep 60 ticks/sec,
+  obstacles from server seed). The client sends a jump log (`jumpTicks`);
+  the server replays the same run and verifies the score bit-for-bit
+  (`gamePlugin.validateReplay`; optional for games without an engine).
+- Tests: engine determinism, replay rejection of a plausible score
+  with a forged log, autoplayer for fair runs in integration
+  tests — 60 tests total.
 
 ### Changed
 
-- `POST /api/game/score` принимает `jumpTicks` (лог ввода для replay).
-- `Game.tsx` — только рендер и ввод: симуляция в движке, партия стартует
-  после ответа `session/start` (при недоступном сервере — офлайн-партия
-  без сохранения).
+- `POST /api/game/score` accepts `jumpTicks` (input log for replay).
+- `Game.tsx` — render and input only: simulation in the engine; run starts
+  after `session/start` response (when the server is unavailable — offline run
+  without saving).
 
 ## [1.2.0] — 2026-07-04
 
 ### Added
 
-- Кап одновременных сессий на юзера (`MAX_SESSIONS_PER_USER = 5`):
-  при логине старейшие сессии сверх лимита удаляются — забытые куки
-  больше не живут валидными до конца TTL.
-- `RATE_LIMIT_FAIL_CLOSED=true` — жёсткий режим rate limiting: при
-  недоступном Redis запросы под лимитом получают 429 (по умолчанию
-  прежний fail-open).
-- Тесты: кап сессий (вытеснение старейшей), fail-open/fail-closed
-  лимитера — 51 тест суммарно.
+- Concurrent session cap per user (`MAX_SESSIONS_PER_USER = 5`):
+  on login, oldest sessions beyond the limit are removed — forgotten cookies
+  no longer stay valid until TTL expires.
+- `RATE_LIMIT_FAIL_CLOSED=true` — strict rate limiting mode: when
+  Redis is unavailable, rate-limited requests get 429 (default remains
+  fail-open).
+- Tests: session cap (oldest evicted), fail-open/fail-closed
+  limiter — 51 tests total.
 
 ### Changed
 
-- `session/start` отдаёт 429 через общий хелпер `tooManyRequests`
-  (единый формат ошибок).
+- `session/start` returns 429 via shared helper `tooManyRequests`
+  (consistent error format).
 
 ### Fixed
 
-- Счётчик тестов в README соответствует факту.
+- Test count in README matches actual total.
 
 ## [1.1.0] — 2026-07-04
 
 ### Added
 
-- Модуль `game/` — вся игра (canvas, константы, типы, скины, метаданные)
-  в одной папке; смена игры не затрагивает shell и API.
-- `game/contract.ts` — типизированный контракт между shell и игровым
-  компонентом (`GameComponentProps`).
-- `game/meta.ts` — единая точка: id, название, описание, feature-флаги.
-- Feature-флаг `features.skins` — выключает UI скинов без правки экранов.
-- `X-Request-Id` в каждом API-ответе + `requestId` в логах ошибок.
-- Сообщения об ошибке на клиенте, если партия не зарегистрирована или
-  счёт не сохранился.
-- Тесты: health (degraded-режим), logout (уничтожение сессии), skins
-  (покупка, дубль, экипировка) — 47 тестов суммарно.
-- Документация: `docs/NEW_GAME.md`, `docs/DEPLOY.md`, `docs/ARCHITECTURE.md`.
+- `game/` module — entire game (canvas, constants, types, skins, metadata)
+  in one folder; swapping games does not touch shell or API.
+- `game/contract.ts` — typed contract between shell and game
+  component (`GameComponentProps`).
+- `game/meta.ts` — single source: id, name, description, feature flags.
+- Feature flag `features.skins` — hides skins UI without editing screens.
+- `X-Request-Id` on every API response + `requestId` in error logs.
+- Client error messages when a run is not registered or
+  score was not saved.
+- Tests: health (degraded mode), logout (session destruction), skins
+  (purchase, duplicate, equip) — 47 tests total.
+- Documentation: `docs/NEW_GAME.md`, `docs/DEPLOY.md`, `docs/ARCHITECTURE.md`.
 
 ### Changed
 
-- Тип `User` вынесен в `types/user.ts` (общий, не зависит от игры).
-- `APP_NAME`, метаданные layout и `gamePlugin.id/displayName` читаются
-  из `game/meta.ts`.
-- CI: заглушка `REDIS_URL` для стабильного build.
+- `User` type moved to `types/user.ts` (shared, game-agnostic).
+- `APP_NAME`, layout metadata, and `gamePlugin.id/displayName` read from
+  `game/meta.ts`.
+- CI: `REDIS_URL` stub for stable build.
 
 ### Removed
 
 - `components/DinoGame.tsx`, `lib/game/constants.ts`, `lib/game/skins.ts`,
-  `types/game.types.ts` — перенесены в `game/`.
+  `types/game.types.ts` — moved to `game/`.
 
 ## [1.0.0]
 
-Первый релиз: auth (bcrypt, httpOnly-сессии), одноразовые игровые партии
-с server seed, лидерборд на Redis ZSET с Mongo fallback, rate limiting,
+Initial release: auth (bcrypt, httpOnly sessions), one-time game runs
+with server seed, Redis ZSET leaderboard with Mongo fallback, rate limiting,
 health check, Docker standalone, CI.

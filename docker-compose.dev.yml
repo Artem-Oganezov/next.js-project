@@ -1,4 +1,4 @@
-# Локальная разработка: Mongo + Redis без app.
+# Local development: Mongo + Redis without app.
 # npm run dev + MONGODB_URI=mongodb://127.0.0.1:27017/game REDIS_URL=redis://127.0.0.1:6379
 services:
   mongo:

@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { resetEnvCache } from "@/lib/env";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 
-// В тестах Redis заведомо недоступен (redis://127.0.0.1:6399) —
-// проверяется поведение лимитера при падении Redis.
+// In tests Redis is intentionally unavailable (redis://127.0.0.1:6399) —
+// verifies limiter behavior when Redis is down.
 describe("enforceRateLimit with unavailable Redis", () => {
   afterEach(() => {
     delete process.env.RATE_LIMIT_FAIL_CLOSED;

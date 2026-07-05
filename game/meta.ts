@@ -1,21 +1,21 @@
 /**
- * Метаданные игры — единственное место, где живут название и фичи.
+ * Game metadata — the single place for name and features.
  *
- * Бэкенд (plugin, API скинов), shell (AuthGate, layout) и сама игра
- * читают отсюда. При смене игры меняешь этот файл + Game.tsx + constants.ts.
+ * Backend (plugin, skins API), shell (AuthGate, layout), and the game itself
+ * read from here. When swapping games, change this file + Game.tsx + constants.ts.
  */
 export const gameMeta = {
-  /** Технический id (логи, plugin). */
+  /** Technical id (logs, plugin). */
   id: "dino-run",
-  /** Название в UI и <title>. */
+  /** Name in UI and <title>. */
   displayName: "Dino Run",
-  /** Часть названия с акцентным цветом (после пробела или вторая часть). */
+  /** Accent-colored part of the name (after a space or second segment). */
   displayNameAccent: "Run",
-  /** Краткое описание для metadata. */
+  /** Short description for metadata. */
   description:
     "Browser game inspired by Chrome Dino with accounts, sessions, and saved high scores.",
   features: {
-    /** false — скины скрыты в UI (API остаётся, но не используется). */
+    /** false — skins hidden in UI (API remains but is unused). */
     skins: true,
   },
 } as const;

@@ -1,12 +1,12 @@
 /**
- * Детерминированный движок Dino Run: чистая симуляция без canvas и таймеров.
+ * Deterministic Dino Run engine: pure simulation without canvas or timers.
  *
- * Один и тот же seed + один и тот же лог прыжков (номера тиков) дают
- * бит-в-бит одинаковую партию — на клиенте и на сервере. Клиент рендерит
- * снапшоты движка, сервер прогоняет replay и сверяет счёт
- * (см. lib/game/plugin.ts → replayScore).
+ * The same seed + the same jump log (tick numbers) produce a bit-for-bit
+ * identical run on the client and server. The client renders engine snapshots;
+ * the server replays and verifies the score
+ * (see lib/game/plugin.ts → replayScore).
  *
- * При смене игры файл заменяется целиком вместе с constants/types.
+ * When swapping games, replace this file entirely along with constants/types.
  */
 import { GAME_CONFIG } from "@/game/constants";
 import type { Cactus, DinoState } from "@/game/types";
@@ -29,19 +29,19 @@ const {
 } = GAME_CONFIG;
 
 export type DinoEngine = {
-  /** Один шаг симуляции; jumpRequested — был ли ввод прыжка на этом тике. */
+  /** One simulation step; jumpRequested — whether jump input was pressed this tick. */
   tick(jumpRequested: boolean): void;
-  /** Номер следующего тика (сколько тиков уже отыграно). */
+  /** Next tick number (how many ticks have been played). */
   getTick(): number;
-  /** Отображаемый счёт (целое). */
+  /** Display score (integer). */
   getScore(): number;
   getSpeed(): number;
   getDino(): Readonly<DinoState>;
   getCacti(): readonly Cactus[];
   isGameOver(): boolean;
-  /** Дино на земле — прыжок на следующем тике сработает. */
+  /** Dino is on the ground — jump will trigger on the next tick. */
   canJump(): boolean;
-  /** Снять game over после рекламы; детерминировано для replay. */
+  /** Clear game over after an ad; deterministic for replay. */
   revive(): void;
 };
 
@@ -162,9 +162,9 @@ export type ReplayResult =
   | { ok: false; reason: "too-long" | "revive-mismatch" };
 
 /**
- * Прогон партии по seed и логу прыжков до game over.
- * При reviveAtTick — после первой смерти вызывается engine.revive() и партия
- * продолжается до второй смерти (должно совпадать с клиентом).
+ * Run a game from seed and jump log until game over.
+ * With reviveAtTick — after the first death, engine.revive() is called and the run
+ * continues until the second death (must match the client).
  */
 export function replayGame(
   seed: string,

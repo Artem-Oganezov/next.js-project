@@ -1,9 +1,8 @@
-# Один VPS: app + redis. Mongo — внешний (Atlas или отдельный сервер),
-# чтобы данные жили отдельно от app-нод и второй сервер подключался без миграций.
+# Single VPS: app + redis. Mongo is external (Atlas or a separate server)
+# so data lives separately from app nodes and additional servers connect without migrations.
 #
-# Масштабирование: на новых серверах поднимай ТОЛЬКО app (тот же image,
-# тот же .env с общими MONGODB_URI/REDIS_URL) и добавляй их в upstream
-# балансировщика — см. nginx.example.conf.
+# Scaling: on new servers run ONLY app (same image, same .env with shared
+# MONGODB_URI/REDIS_URL) and add them to the load balancer upstream — see nginx.example.conf.
 services:
   app:
     build: .
@@ -28,9 +27,9 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
-    # Порт наружу не публикуем: app ходит по внутренней сети compose.
-    # Для общего Redis на несколько серверов вынеси его на отдельный
-    # хост/Upstash и поменяй REDIS_URL.
+    # Port is not published externally: app connects over the compose internal network.
+    # For shared Redis across multiple servers, run it on a separate
+    # host/Upstash and update REDIS_URL.
 
 volumes:
   redis_data:

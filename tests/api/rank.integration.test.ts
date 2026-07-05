@@ -44,9 +44,8 @@ async function registerUser(username: string): Promise<void> {
 }
 
 /**
- * Играет честную партию автоплеером (счёт ≥ targetScore) за текущего
- * залогиненного юзера и сабмитит результат. Сессия бэкдейтится на
- * фактическую длительность партии.
+ * Plays a fair run with the autoplayer (score ≥ targetScore) for the currently
+ * logged-in user and submits the result. Session is backdated to the actual run duration.
  */
 async function submitScore(targetScore: number): Promise<Response> {
   const startResponse = await sessionStartPost(

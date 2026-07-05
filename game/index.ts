@@ -1,11 +1,11 @@
 /**
- * Единая точка входа игрового модуля.
+ * Single entry point for the game module.
  *
- * Shell (AuthGate, layout) импортирует ТОЛЬКО отсюда:
+ * Shell (AuthGate, layout) imports ONLY from here:
  *   import { Game, gameMeta, SKINS } from "@/game";
  *
- * Смена игры = замена содержимого папки game/ + правила счёта
- * в lib/game/plugin.ts. Shell и API не трогаются.
+ * Swapping games = replace contents of game/ + score rules
+ * in lib/game/plugin.ts. Shell and API are unchanged.
  */
 export { default as Game } from "./Game";
 export { gameMeta, type GameMeta } from "./meta";
