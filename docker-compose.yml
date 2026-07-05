@@ -5,7 +5,15 @@
 # MONGODB_URI/REDIS_URL) and add them to the load balancer upstream — see nginx.example.conf.
 services:
   app:
-    build: .
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_REVIVE_AD_PROVIDER: ${NEXT_PUBLIC_REVIVE_AD_PROVIDER:-none}
+        NEXT_PUBLIC_GAM_AD_UNIT_PATH: ${NEXT_PUBLIC_GAM_AD_UNIT_PATH:-}
+        NEXT_PUBLIC_GAM_NETWORK_ID: ${NEXT_PUBLIC_GAM_NETWORK_ID:-}
+        NEXT_PUBLIC_GAM_AD_UNIT_NAME: ${NEXT_PUBLIC_GAM_AD_UNIT_NAME:-}
+        NEXT_PUBLIC_GAM_AD_FORMAT: ${NEXT_PUBLIC_GAM_AD_FORMAT:-interstitial}
+        NEXT_PUBLIC_REVIVE_AD_SLOT_ID: ${NEXT_PUBLIC_REVIVE_AD_SLOT_ID:-revive-ad-slot}
     env_file: .env
     ports:
       - "3000:3000"

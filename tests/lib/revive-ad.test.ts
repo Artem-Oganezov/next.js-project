@@ -84,6 +84,20 @@ describe("revive ad provider", () => {
     await expect(createReviveAdProvider().show()).resolves.toBe("failed");
   });
 
+  it("isReviveAdEnabled is false for slot without GAM path", () => {
+    vi.stubEnv("NEXT_PUBLIC_REVIVE_AD_PROVIDER", "slot");
+    delete process.env.NEXT_PUBLIC_GAM_AD_UNIT_PATH;
+    delete process.env.NEXT_PUBLIC_GAM_NETWORK_ID;
+    delete process.env.NEXT_PUBLIC_GAM_AD_UNIT_NAME;
+    expect(isReviveAdEnabled()).toBe(false);
+  });
+
+  it("isReviveAdEnabled is true for slot with GAM path", () => {
+    vi.stubEnv("NEXT_PUBLIC_REVIVE_AD_PROVIDER", "slot");
+    vi.stubEnv("NEXT_PUBLIC_GAM_AD_UNIT_PATH", "/123/revive");
+    expect(isReviveAdEnabled()).toBe(true);
+  });
+
   it("slot provider fails without mount node or slot id", async () => {
     vi.stubEnv("NEXT_PUBLIC_REVIVE_AD_SLOT_ID", "revive-slot");
     const provider = createSlotReviveAdProvider(() => null);

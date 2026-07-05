@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-const CSP =
-  "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; " +
-  "img-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; " +
-  "style-src 'self' 'unsafe-inline'; connect-src 'self'";
+import { buildContentSecurityPolicy } from "@/lib/security/csp";
 
 function isCrossOriginMutation(request: NextRequest): boolean {
   if (request.method === "GET" || request.method === "HEAD") {
@@ -42,7 +38,7 @@ export function middleware(request: NextRequest) {
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set("Content-Security-Policy", CSP);
+  response.headers.set("Content-Security-Policy", buildContentSecurityPolicy());
   response.headers.set(
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()",

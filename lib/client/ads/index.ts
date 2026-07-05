@@ -1,3 +1,4 @@
+import { isGamReviveConfigured } from "@/lib/client/ads/gam-config";
 import { createSlotReviveAdProvider } from "@/lib/client/ads/slot-provider";
 import { createStubReviveAdProvider } from "@/lib/client/ads/stub-provider";
 import type {
@@ -21,7 +22,10 @@ export function resolveReviveAdProviderMode(): ReviveAdProviderMode {
 }
 
 export function isReviveAdEnabled(): boolean {
-  return resolveReviveAdProviderMode() !== "none";
+  const mode = resolveReviveAdProviderMode();
+  if (mode === "none") return false;
+  if (mode === "slot") return isGamReviveConfigured();
+  return true;
 }
 
 export function createReviveAdProvider(
@@ -39,6 +43,11 @@ export function createReviveAdProvider(
 }
 
 export type { ReviveAdOutcome, ReviveAdProvider } from "@/lib/client/ads/types";
+export {
+  getGamAdFormat,
+  getGamAdUnitPath,
+  isGamReviveConfigured,
+} from "@/lib/client/ads/gam-config";
 export {
   REVIVE_AD_COMPLETE_EVENT,
   REVIVE_AD_DISMISSED_EVENT,
