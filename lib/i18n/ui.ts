@@ -144,6 +144,12 @@ export const ui = {
     sessionStartFailed: "Could not start server session — score will not be saved",
     sessionMissing: "Run was not registered — score not saved",
     saveFailed: "Could not save score — check your connection",
+    reviveTitle: "Keep running?",
+    reviveHint: "Watch a short ad to continue — once per run.",
+    watchAdContinue: "Watch ad & continue",
+    saveScore: "Save score",
+    adLoading: "Loading ad…",
+    reviveFailed: "Could not continue — save your score or try again",
     ariaLabel: (name: string) => `Game ${name}`,
   },
 } as const;

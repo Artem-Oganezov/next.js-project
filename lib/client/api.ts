@@ -71,6 +71,11 @@ export const api = {
       "/api/game/session/start",
       { method: "POST" },
     ),
+  gameRevive: (sessionId: string) =>
+    apiFetch<{ ok: boolean }>("/api/game/revive", {
+      method: "POST",
+      json: { sessionId },
+    }),
   submitScore: (score: number, sessionId: string, inputLog: unknown) =>
     apiFetch<{
       bestScore: number;

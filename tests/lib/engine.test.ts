@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDinoEngine, replayGame } from "@/game/engine";
-import { playHonestGame } from "../helpers/replay";
+import { playHonestGame, playHonestGameWithRevive } from "../helpers/replay";
 
 const SEED = "test-seed-deterministic";
 const MAX_TICKS = 200_000;
@@ -45,6 +45,12 @@ describe("Dino engine determinism", () => {
       score: engine.getScore(),
       ticks: engine.getTick(),
     });
+  });
+
+  it("tick-by-tick engine with revive matches replayGame", () => {
+    const run = playHonestGameWithRevive(SEED, 120);
+    const replay = replayGame(SEED, run.jumpTicks, MAX_TICKS, run.reviveAtTick);
+    expect(replay).toEqual({ ok: true, score: run.score, ticks: run.ticks });
   });
 });
 

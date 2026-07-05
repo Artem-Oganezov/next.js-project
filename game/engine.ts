@@ -22,6 +22,7 @@ const {
   DINO_HEIGHT,
   BASE_SPEED,
   SCORE_PER_FRAME,
+  REVIVE_INVINCIBILITY_TICKS,
 } = GAME_CONFIG;
 
 /** Фиксированный шаг симуляции — не зависит от fps устройства. */
@@ -40,6 +41,8 @@ export type DinoEngine = {
   isGameOver(): boolean;
   /** Дино на земле — прыжок на следующем тике сработает. */
   canJump(): boolean;
+  /** Снять game over после рекламы; детерминировано для replay. */
+  revive(): void;
 };
 
 function isColliding(
@@ -66,6 +69,7 @@ export function createDinoEngine(seed: string): DinoEngine {
   let nextCactusGap = 80 + Math.floor(random() * 60);
   let tickCount = 0;
   let gameOver = false;
+  let invincibleTicksRemaining = 0;
 
   const onGround = (): boolean =>
     dino.velocityY === 0 && dino.y >= GROUND_Y - DINO_HEIGHT - 1;
@@ -110,6 +114,7 @@ export function createDinoEngine(seed: string): DinoEngine {
     for (const cactus of cacti) {
       const cactusY = GROUND_Y - cactus.height;
       if (
+        invincibleTicksRemaining <= 0 &&
         isColliding(
           DINO_X,
           dino.y,
@@ -127,6 +132,16 @@ export function createDinoEngine(seed: string): DinoEngine {
     }
 
     tickCount += 1;
+    if (invincibleTicksRemaining > 0) {
+      invincibleTicksRemaining -= 1;
+    }
+  };
+
+  const revive = (): void => {
+    if (!gameOver) return;
+    gameOver = false;
+    invincibleTicksRemaining = REVIVE_INVINCIBILITY_TICKS;
+    dino.velocityY = JUMP_FORCE;
   };
 
   return {
@@ -138,23 +153,24 @@ export function createDinoEngine(seed: string): DinoEngine {
     getCacti: () => cacti,
     isGameOver: () => gameOver,
     canJump: () => !gameOver && onGround(),
+    revive,
   };
 }
 
 export type ReplayResult =
-  { ok: true; score: number; ticks: number } | { ok: false; reason: "too-long" };
+  | { ok: true; score: number; ticks: number }
+  | { ok: false; reason: "too-long" | "revive-mismatch" };
 
 /**
  * Прогон партии по seed и логу прыжков до game over.
- *
- * Партия Dino Run всегда конечна: после последнего прыжка дино остаётся
- * на земле и врезается в следующий кактус. maxTicks — страховка от
- * зацикливания на битых данных.
+ * При reviveAtTick — после первой смерти вызывается engine.revive() и партия
+ * продолжается до второй смерти (должно совпадать с клиентом).
  */
 export function replayGame(
   seed: string,
   jumpTicks: readonly number[],
   maxTicks: number,
+  reviveAtTick?: number,
 ): ReplayResult {
   const engine = createDinoEngine(seed);
   const jumps = new Set(jumpTicks);
@@ -164,6 +180,19 @@ export function replayGame(
       return { ok: false, reason: "too-long" };
     }
     engine.tick(jumps.has(engine.getTick()));
+  }
+
+  if (reviveAtTick !== undefined) {
+    if (engine.getTick() !== reviveAtTick) {
+      return { ok: false, reason: "revive-mismatch" };
+    }
+    engine.revive();
+    while (!engine.isGameOver()) {
+      if (engine.getTick() >= maxTicks) {
+        return { ok: false, reason: "too-long" };
+      }
+      engine.tick(jumps.has(engine.getTick()));
+    }
   }
 
   return { ok: true, score: engine.getScore(), ticks: engine.getTick() };

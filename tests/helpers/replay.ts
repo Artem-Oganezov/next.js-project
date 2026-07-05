@@ -45,3 +45,48 @@ export function playHonestGame(seed: string, targetScore: number): HonestRun {
 
   return { score: engine.getScore(), jumpTicks, ticks: engine.getTick() };
 }
+
+/**
+ * One revive mid-run: die once without jumps, revive, then autoplay to targetScore.
+ */
+export function playHonestGameWithRevive(
+  seed: string,
+  targetScoreAfterRevive: number,
+): HonestRun & { reviveAtTick: number } {
+  const engine = createDinoEngine(seed);
+  const jumpTicks: number[] = [];
+
+  while (!engine.isGameOver()) {
+    engine.tick(false);
+  }
+  const reviveAtTick = engine.getTick();
+  engine.revive();
+
+  while (!engine.isGameOver() && engine.getTick() < MAX_PLAY_TICKS) {
+    let jump = false;
+
+    if (engine.getScore() < targetScoreAfterRevive && engine.canJump()) {
+      const dinoFront = DINO_X + DINO_WIDTH;
+      const jumpDistancePx = engine.getSpeed() * JUMP_LEAD_TICKS;
+      for (const cactus of engine.getCacti()) {
+        const distance = cactus.x - dinoFront;
+        if (distance > 0 && distance <= jumpDistancePx) {
+          jump = true;
+          break;
+        }
+      }
+    }
+
+    if (jump) {
+      jumpTicks.push(engine.getTick());
+    }
+    engine.tick(jump);
+  }
+
+  return {
+    score: engine.getScore(),
+    jumpTicks,
+    ticks: engine.getTick(),
+    reviveAtTick,
+  };
+}

@@ -9,6 +9,8 @@ export const GAME_CONFIG = {
   DINO_WIDTH: 44,
   DINO_HEIGHT: 47,
   BASE_SPEED: 5,
+  /** Invincibility after revive — must match server replay (ticks at 60/s). */
+  REVIVE_INVINCIBILITY_TICKS: 90,
   // Связано с maxScorePerSecond в lib/game/plugin.ts:
   // 0.15 * 60fps ≈ 9 очков/сек при честной игре.
   SCORE_PER_FRAME: 0.15,

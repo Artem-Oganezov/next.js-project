@@ -6,7 +6,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { invalidateTop10, upsertLeaderboardScore } from "@/lib/cache/leaderboard";
 import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
-import { gamePlugin } from "@/lib/game/plugin";
+import { gamePlugin, type DinoInputLog } from "@/lib/game/plugin";
 import { computeRank } from "@/lib/game/rank";
 import { isBetterScore } from "@/lib/game/score-order";
 import { GameSession } from "@/lib/models/GameSession";
@@ -83,6 +83,19 @@ export const POST = withApiHandler(
         elapsedMs,
       });
       return forbidden(msg.game.alreadySubmitted);
+    }
+
+    const parsedInput = inputParsed.input as DinoInputLog;
+    const hasReviveInLog = parsedInput.reviveAtTick !== undefined;
+    if (hasReviveInLog !== gameSession.reviveUsed) {
+      await recordSuspiciousSubmit({
+        userId: sessionUser.id,
+        username: sessionUser.username,
+        score,
+        reason: "revive-mismatch",
+        elapsedMs,
+      });
+      return forbidden(msg.game.reviveMismatch);
     }
 
     const validation = gamePlugin.validateScore(score, gameSession.startedAt);

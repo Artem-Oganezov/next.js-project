@@ -103,6 +103,7 @@ Remaining boundary: replay proves the run followed game rules, not that a human 
 | `PUT`        | `/api/auth/password`              | Change password (authenticated)                  |
 | `DELETE`     | `/api/auth/account`               | Delete account (authenticated)                   |
 | `POST`       | `/api/game/session/start`         | Start run → `sessionId` + `seed`                   |
+| `POST`       | `/api/game/revive`                | Mark revive used (once per session, before continue) |
 | `POST`       | `/api/game/score`                 | `{ score, sessionId, inputLog }` → best + rank   |
 | `GET`        | `/api/leaderboard`                | Top 10 (60s Redis cache)                         |
 | `GET`        | `/api/leaderboard/rank`           | Current user rank                                |

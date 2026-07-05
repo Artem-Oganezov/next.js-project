@@ -29,13 +29,13 @@ Use this after local dev works and before pointing a real domain at the game.
 ## Game & anti-cheat smoke test
 
 - [ ] Register → play → first death → save score → leaderboard updates
+- [ ] First death → watch ad (stub) → continue → second death → score saved with revive log
 - [ ] Same `sessionId` resubmit rejected (403)
 - [ ] Logs show no sustained `rate-limit ... Redis unavailable`
 
 ## Optional next (monetization)
 
-- [ ] Revive-after-ad flow (stub ad → `POST /api/game/revive` → continue run)
-- [ ] Real ad SDK (interstitial) wired to the revive button
+- [ ] Real ad SDK (interstitial) wired to the revive button (`AD_STUB_MS` in `game/Game.tsx`)
 - [ ] Privacy policy mentions ads / ad partners if applicable
 
 See also: [DEPLOY.md](DEPLOY.md), [VPS-DEPLOY.md](VPS-DEPLOY.md).

@@ -8,6 +8,8 @@ export interface IGameSession extends Document {
   startedAt: Date;
   /** Партия одноразовая: submit атомарно переводит флаг в true. */
   scoreSubmitted: boolean;
+  /** Игрок использовал revive (реклама) — не более одного раза за сессию. */
+  reviveUsed: boolean;
   expiresAt: Date;
 }
 
@@ -27,6 +29,10 @@ const gameSessionSchema = new Schema<IGameSession>({
     required: true,
   },
   scoreSubmitted: {
+    type: Boolean,
+    default: false,
+  },
+  reviveUsed: {
     type: Boolean,
     default: false,
   },

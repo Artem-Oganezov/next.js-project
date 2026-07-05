@@ -20,6 +20,8 @@ const { CANVAS_WIDTH, CANVAS_HEIGHT, GROUND_Y, DINO_X, DINO_WIDTH, DINO_HEIGHT }
 
 const TICK_MS = 1000 / TICKS_PER_SECOND;
 const MAX_FRAME_DELTA_MS = 100;
+/** Stub interstitial delay before revive (replace with real ad SDK). */
+const AD_STUB_MS = 1200;
 
 export default function Game({
   username,
@@ -31,8 +33,12 @@ export default function Game({
 }: GameComponentProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const resetGameRef = useRef<(() => void) | null>(null);
+  const watchAdRef = useRef<(() => void) | null>(null);
+  const saveScoreRef = useRef<(() => void) | null>(null);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(initialBestScore);
+  const [reviveOffer, setReviveOffer] = useState(false);
+  const [adLoading, setAdLoading] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [rankInfo, setRankInfo] = useState<{
@@ -70,11 +76,23 @@ export default function Game({
     let tickAccumulatorMs = 0;
     let generation = 0;
     let lastDisplayedScore = -1;
+    let pausedForReviveOffer = false;
+    let hasRevived = false;
+    let reviveAtTick: number | null = null;
+    let adPending = false;
+    let adTimeoutId = 0;
 
     /** Visual-only offset between fixed simulation ticks (does not affect engine/replay). */
     const renderAlpha = (): number => {
       if (!engine || engine.isGameOver()) return 0;
       return Math.min(tickAccumulatorMs / TICK_MS, 1);
+    };
+
+    const buildInputLog = (): unknown => {
+      if (hasRevived && reviveAtTick !== null) {
+        return { jumpTicks, reviveAtTick };
+      }
+      return jumpTicks;
     };
 
     const startGameSession = () => {
@@ -96,12 +114,18 @@ export default function Game({
 
     const resetGame = () => {
       generation += 1;
+      window.clearTimeout(adTimeoutId);
       engine = null;
       jumpTicks = [];
       pendingJump = false;
       tickAccumulatorMs = 0;
       lastDisplayedScore = -1;
+      pausedForReviveOffer = false;
+      hasRevived = false;
+      reviveAtTick = null;
       setScore(0);
+      setReviveOffer(false);
+      setAdLoading(false);
       setGameOver(false);
       setRankInfo(null);
       setSaveError(null);
@@ -110,13 +134,13 @@ export default function Game({
 
     resetGameRef.current = resetGame;
 
-    const submitScore = (displayScore: number, ticks: number[]) => {
+    const submitScore = (displayScore: number, inputLog: unknown) => {
       if (!gameSessionId) {
         setSaveError(ui.game.sessionMissing);
         return;
       }
       void api
-        .submitScore(displayScore, gameSessionId, ticks)
+        .submitScore(displayScore, gameSessionId, inputLog)
         .then((data) => {
           setHighScore(data.bestScore);
           onScoreSavedRef.current?.({
@@ -130,8 +154,58 @@ export default function Game({
         });
     };
 
+    const saveScoreFromReviveOffer = () => {
+      if (!engine) return;
+      pausedForReviveOffer = false;
+      setReviveOffer(false);
+      setGameOver(true);
+      submitScore(engine.getScore(), buildInputLog());
+    };
+
+    saveScoreRef.current = saveScoreFromReviveOffer;
+
+    const watchAdAndRevive = () => {
+      if (!engine || !gameSessionId || hasRevived || adPending) return;
+      adPending = true;
+      setAdLoading(true);
+      adTimeoutId = window.setTimeout(() => {
+        void api
+          .gameRevive(gameSessionId!)
+          .then(() => {
+            hasRevived = true;
+            pausedForReviveOffer = false;
+            engine!.revive();
+            setReviveOffer(false);
+            setAdLoading(false);
+            adPending = false;
+          })
+          .catch(() => {
+            setSaveError(ui.game.reviveFailed);
+            setAdLoading(false);
+            adPending = false;
+          });
+      }, AD_STUB_MS);
+    };
+
+    watchAdRef.current = watchAdAndRevive;
+
     const update = (frameTime: number) => {
-      if (!engine || engine.isGameOver()) return;
+      if (!engine) return;
+
+      if (engine.isGameOver()) {
+        if (!pausedForReviveOffer && !hasRevived) {
+          pausedForReviveOffer = true;
+          reviveAtTick = engine.getTick();
+          setReviveOffer(true);
+          return;
+        }
+        if (pausedForReviveOffer) {
+          return;
+        }
+        setGameOver(true);
+        submitScore(engine.getScore(), buildInputLog());
+        return;
+      }
 
       const delta = Math.min(frameTime - lastFrameTime, MAX_FRAME_DELTA_MS);
       tickAccumulatorMs += delta;
@@ -150,11 +224,6 @@ export default function Game({
       if (nextScore !== lastDisplayedScore) {
         lastDisplayedScore = nextScore;
         setScore(nextScore);
-      }
-
-      if (engine.isGameOver()) {
-        setGameOver(true);
-        submitScore(engine.getScore(), jumpTicks);
       }
     };
 
@@ -199,6 +268,7 @@ export default function Game({
 
     const handleJumpInput = () => {
       if (engine?.isGameOver()) {
+        if (pausedForReviveOffer) return;
         resetGame();
         return;
       }
@@ -226,6 +296,9 @@ export default function Game({
 
     return () => {
       resetGameRef.current = null;
+      watchAdRef.current = null;
+      saveScoreRef.current = null;
+      window.clearTimeout(adTimeoutId);
       generation += 1;
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener("keydown", handleKeyDown);
@@ -263,6 +336,51 @@ export default function Game({
       </div>
 
       <p className="game-sub game-hint">{ui.game.spaceJump}</p>
+
+      {reviveOffer && (
+        <div className="dead-overlay" data-testid="revive-offer-modal">
+          <div className="dead-title">{ui.game.reviveTitle}</div>
+          <div className="dead-score">
+            {ui.game.score}: {score}
+          </div>
+          <p className="game-sub revive-hint">{ui.game.reviveHint}</p>
+
+          {saveError && (
+            <p className="alert-error" role="alert">
+              {saveError}
+            </p>
+          )}
+
+          <div className="btn-row">
+            <button
+              type="button"
+              data-testid="revive-watch-ad-btn"
+              onClick={() => watchAdRef.current?.()}
+              className="pbtn pbtn-primary"
+              disabled={adLoading}
+            >
+              {adLoading ? ui.game.adLoading : ui.game.watchAdContinue}
+            </button>
+            <button
+              type="button"
+              data-testid="revive-save-score-btn"
+              onClick={() => saveScoreRef.current?.()}
+              className="pbtn pbtn-secondary"
+              disabled={adLoading}
+            >
+              {ui.game.saveScore}
+            </button>
+            <button
+              type="button"
+              onClick={() => resetGameRef.current?.()}
+              className="pbtn pbtn-secondary"
+              disabled={adLoading}
+            >
+              {ui.game.playAgain}
+            </button>
+          </div>
+        </div>
+      )}
 
       {gameOver && (
         <div className="dead-overlay" data-testid="game-over-modal">

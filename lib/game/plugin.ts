@@ -12,6 +12,11 @@ export type InputParseResult =
   | { ok: true; input: unknown }
   | { ok: false; message: string };
 
+export type DinoInputLog = {
+  jumpTicks: number[];
+  reviveAtTick?: number;
+};
+
 /**
  * Единственная game-specific точка бэкенда.
  *
@@ -45,8 +50,7 @@ export type GamePlugin = {
   ): ScoreValidationResult;
 };
 
-/** Dino Run: tick indices where jump was pressed. */
-export const dinoInputSchema = z
+const jumpTicksSchema = z
   .array(
     z
       .number()
@@ -55,6 +59,43 @@ export const dinoInputSchema = z
       .max(10_000_000, "Invalid tick index"),
   )
   .max(10_000, "Input log too long");
+
+/** Legacy array-only log (still accepted). */
+export const dinoInputSchema = jumpTicksSchema;
+
+const dinoInputObjectSchema = z
+  .object({
+    jumpTicks: jumpTicksSchema,
+    reviveAtTick: z
+      .number()
+      .int("Revive tick must be an integer")
+      .min(1, "Revive tick must be positive")
+      .max(10_000_000, "Invalid revive tick")
+      .optional(),
+  })
+  .strict();
+
+function parseDinoInputLog(raw: unknown): InputParseResult {
+  if (raw === undefined || raw === null || Array.isArray(raw)) {
+    const result = jumpTicksSchema.safeParse(raw ?? []);
+    if (!result.success) {
+      return {
+        ok: false,
+        message: result.error.issues[0]?.message ?? "Invalid input log",
+      };
+    }
+    return { ok: true, input: { jumpTicks: result.data } satisfies DinoInputLog };
+  }
+
+  const objectResult = dinoInputObjectSchema.safeParse(raw);
+  if (!objectResult.success) {
+    return {
+      ok: false,
+      message: objectResult.error.issues[0]?.message ?? "Invalid input log",
+    };
+  }
+  return { ok: true, input: objectResult.data satisfies DinoInputLog };
+}
 
 const scoreRules: ScoreRulesConfig = {
   maxScorePerSecond: 18,
@@ -72,22 +113,16 @@ export const gamePlugin: GamePlugin = {
   scoreOrder: "desc",
   scoreRules,
   maxInputLogBytes: MAX_INPUT_LOG_BYTES,
-  parseInputLog(raw) {
-    const result = dinoInputSchema.safeParse(raw ?? []);
-    if (!result.success) {
-      return {
-        ok: false,
-        message: result.error.issues[0]?.message ?? "Invalid input log",
-      };
-    }
-    return { ok: true, input: result.data };
-  },
+  parseInputLog: parseDinoInputLog,
   validateScore: (score, gameStartedAt, now) =>
     validateGameScore(score, gameStartedAt, scoreRules, now),
   validateReplay: (seed, input, submittedScore) => {
-    const jumpTicks = input as number[];
-    const replay = replayGame(seed, jumpTicks, MAX_REPLAY_TICKS);
+    const { jumpTicks, reviveAtTick } = input as DinoInputLog;
+    const replay = replayGame(seed, jumpTicks, MAX_REPLAY_TICKS, reviveAtTick);
     if (!replay.ok) {
+      if (replay.reason === "revive-mismatch") {
+        return { ok: false, message: "Revive tick does not match server replay" };
+      }
       return { ok: false, message: "Game failed server-side verification" };
     }
     if (replay.score !== submittedScore) {

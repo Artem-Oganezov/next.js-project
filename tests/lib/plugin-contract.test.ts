@@ -51,11 +51,22 @@ describe("gamePlugin.parseInputLog (Dino reference plugin)", () => {
     ).toBe(false);
   });
 
-  it("defaults missing input to empty array", () => {
+  it("defaults missing input to empty jump log object", () => {
     const result = gamePlugin.parseInputLog(undefined);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.input).toEqual([]);
+      expect(result.input).toEqual({ jumpTicks: [] });
+    }
+  });
+
+  it("accepts object log with reviveAtTick", () => {
+    const result = gamePlugin.parseInputLog({
+      jumpTicks: [10, 55],
+      reviveAtTick: 400,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.input).toEqual({ jumpTicks: [10, 55], reviveAtTick: 400 });
     }
   });
 });

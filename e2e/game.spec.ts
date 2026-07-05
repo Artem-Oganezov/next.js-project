@@ -17,9 +17,13 @@ test.describe("Game E2E", () => {
     await expect(page.getByTestId("game-canvas")).toBeVisible();
 
     // Без прыжков дино врезается в первый кактус (~3–8 с).
-    await expect(page.getByTestId("game-over-modal")).toBeVisible({
+    await expect(page.getByTestId("revive-offer-modal")).toBeVisible({
       timeout: 25_000,
     });
+
+    await page.getByTestId("revive-save-score-btn").click();
+
+    await expect(page.getByTestId("game-over-modal")).toBeVisible();
 
     await expect(page.getByText("Game over!")).toBeVisible();
     // Ошибка сохранения не должна появиться при рабочем API.

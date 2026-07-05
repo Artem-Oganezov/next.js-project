@@ -33,6 +33,8 @@ export const msg = {
     alreadySubmitted: "This run was already submitted",
     inputLogTooLarge: "Input log too large",
     tooManyRequests: "Too many requests",
+    reviveUnavailable: "Revive is not available for this run",
+    reviveMismatch: "Revive data does not match session",
   },
   skins: {
     skinIdRequired: "skinId is required",
