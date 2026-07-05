@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/client/api";
+import { createReviveAdProvider, isReviveAdEnabled } from "@/lib/client/ads";
 import { ui } from "@/lib/i18n/ui";
 import type { GameComponentProps } from "@/game/contract";
 import {
@@ -20,8 +21,7 @@ const { CANVAS_WIDTH, CANVAS_HEIGHT, GROUND_Y, DINO_X, DINO_WIDTH, DINO_HEIGHT }
 
 const TICK_MS = 1000 / TICKS_PER_SECOND;
 const MAX_FRAME_DELTA_MS = 100;
-/** Stub interstitial delay before revive (replace with real ad SDK). */
-const AD_STUB_MS = 1200;
+const REVIVE_AD_ENABLED = isReviveAdEnabled();
 
 export default function Game({
   username,
@@ -35,6 +35,7 @@ export default function Game({
   const resetGameRef = useRef<(() => void) | null>(null);
   const watchAdRef = useRef<(() => void) | null>(null);
   const saveScoreRef = useRef<(() => void) | null>(null);
+  const adSlotRef = useRef<HTMLDivElement>(null);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(initialBestScore);
   const [reviveOffer, setReviveOffer] = useState(false);
@@ -80,7 +81,6 @@ export default function Game({
     let hasRevived = false;
     let reviveAtTick: number | null = null;
     let adPending = false;
-    let adTimeoutId = 0;
 
     /** Visual-only offset between fixed simulation ticks (does not affect engine/replay). */
     const renderAlpha = (): number => {
@@ -114,7 +114,6 @@ export default function Game({
 
     const resetGame = () => {
       generation += 1;
-      window.clearTimeout(adTimeoutId);
       engine = null;
       jumpTicks = [];
       pendingJump = false;
@@ -168,8 +167,21 @@ export default function Game({
       if (!engine || !gameSessionId || hasRevived || adPending) return;
       adPending = true;
       setAdLoading(true);
-      adTimeoutId = window.setTimeout(() => {
-        void api
+      setSaveError(null);
+
+      const provider = createReviveAdProvider(() => adSlotRef.current);
+
+      void provider.show().then((outcome) => {
+        if (outcome !== "completed") {
+          setSaveError(
+            outcome === "dismissed" ? ui.game.adDismissed : ui.game.reviveFailed,
+          );
+          setAdLoading(false);
+          adPending = false;
+          return;
+        }
+
+        return api
           .gameRevive(gameSessionId!)
           .then(() => {
             hasRevived = true;
@@ -184,7 +196,7 @@ export default function Game({
             setAdLoading(false);
             adPending = false;
           });
-      }, AD_STUB_MS);
+      });
     };
 
     watchAdRef.current = watchAdAndRevive;
@@ -298,7 +310,6 @@ export default function Game({
       resetGameRef.current = null;
       watchAdRef.current = null;
       saveScoreRef.current = null;
-      window.clearTimeout(adTimeoutId);
       generation += 1;
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener("keydown", handleKeyDown);
@@ -343,7 +354,16 @@ export default function Game({
           <div className="dead-score">
             {ui.game.score}: {score}
           </div>
-          <p className="game-sub revive-hint">{ui.game.reviveHint}</p>
+          <p className="game-sub revive-hint">
+            {REVIVE_AD_ENABLED ? ui.game.reviveHint : ui.game.reviveHintNoAd}
+          </p>
+
+          <div
+            ref={adSlotRef}
+            className="revive-ad-slot"
+            data-testid="revive-ad-slot"
+            aria-hidden={!adLoading}
+          />
 
           {saveError && (
             <p className="alert-error" role="alert">
@@ -352,15 +372,17 @@ export default function Game({
           )}
 
           <div className="btn-row">
-            <button
-              type="button"
-              data-testid="revive-watch-ad-btn"
-              onClick={() => watchAdRef.current?.()}
-              className="pbtn pbtn-primary"
-              disabled={adLoading}
-            >
-              {adLoading ? ui.game.adLoading : ui.game.watchAdContinue}
-            </button>
+            {REVIVE_AD_ENABLED && (
+              <button
+                type="button"
+                data-testid="revive-watch-ad-btn"
+                onClick={() => watchAdRef.current?.()}
+                className="pbtn pbtn-primary"
+                disabled={adLoading}
+              >
+                {adLoading ? ui.game.adLoading : ui.game.watchAdContinue}
+              </button>
+            )}
             <button
               type="button"
               data-testid="revive-save-score-btn"

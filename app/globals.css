@@ -774,6 +774,21 @@ body {
   background: var(--pink-bg);
 }
 
+.revive-hint {
+  max-width: 320px;
+  line-height: 1.45;
+}
+
+.revive-ad-slot:empty {
+  display: none;
+}
+
+.revive-ad-slot:not(:empty) {
+  width: min(100%, 480px);
+  min-height: 120px;
+  margin-top: 8px;
+}
+
 .dead-rank b {
   color: var(--coral-dark);
 }
