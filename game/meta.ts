@@ -9,9 +9,11 @@ export const gameMeta = {
   id: "dino-run",
   /** Название в UI и <title>. */
   displayName: "Dino Run",
+  /** Часть названия с акцентным цветом (после пробела или вторая часть). */
+  displayNameAccent: "Run",
   /** Краткое описание для metadata. */
   description:
-    "Браузерная игра в стиле Chrome Dino с регистрацией, сессиями и сохранением рекорда в MongoDB.",
+    "Browser game inspired by Chrome Dino with accounts, sessions, and saved high scores.",
   features: {
     /** false — скины скрыты в UI (API остаётся, но не используется). */
     skins: true,

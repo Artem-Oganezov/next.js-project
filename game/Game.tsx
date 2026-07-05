@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/client/api";
 import { ui } from "@/lib/i18n/ui";
 import type { GameComponentProps } from "@/game/contract";
+import {
+  drawGround,
+  drawSkyBackground,
+  drawSkyDecor,
+  drawStyledCactus,
+  drawStyledDino,
+} from "@/game/canvas-draw";
 import { GAME_CONFIG } from "@/game/constants";
 import { createDinoEngine, TICKS_PER_SECOND, type DinoEngine } from "@/game/engine";
 import { gameMeta } from "@/game/meta";
@@ -12,15 +19,15 @@ const { CANVAS_WIDTH, CANVAS_HEIGHT, GROUND_Y, DINO_X, DINO_WIDTH, DINO_HEIGHT }
   GAME_CONFIG;
 
 const TICK_MS = 1000 / TICKS_PER_SECOND;
-/** Кап на догоняющие тики за кадр: после свёрнутой вкладки игра ставится
- * на паузу, а не проматывается вперёд. */
 const MAX_FRAME_DELTA_MS = 100;
 
 export default function Game({
+  username,
   initialBestScore = 0,
-  activeSkinColor = "#535353",
+  activeSkinColor = "#ff6f5e",
   onScoreSaved,
   onBack,
+  onOpenLeaderboard,
 }: GameComponentProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const resetGameRef = useRef<(() => void) | null>(null);
@@ -61,8 +68,14 @@ export default function Game({
     let animationFrameId = 0;
     let lastFrameTime = 0;
     let tickAccumulatorMs = 0;
-    // Игнорировать ответы session/start, пришедшие после нового reset.
     let generation = 0;
+    let lastDisplayedScore = -1;
+
+    /** Visual-only offset between fixed simulation ticks (does not affect engine/replay). */
+    const renderAlpha = (): number => {
+      if (!engine || engine.isGameOver()) return 0;
+      return Math.min(tickAccumulatorMs / TICK_MS, 1);
+    };
 
     const startGameSession = () => {
       gameSessionId = null;
@@ -76,7 +89,6 @@ export default function Game({
         })
         .catch(() => {
           if (requestGeneration !== generation) return;
-          // Офлайн-партия на локальном seed: играть можно, счёт не сохранится.
           engine = createDinoEngine(Math.random().toString(36).slice(2));
           setSaveError(ui.game.sessionStartFailed);
         });
@@ -88,6 +100,7 @@ export default function Game({
       jumpTicks = [];
       pendingJump = false;
       tickAccumulatorMs = 0;
+      lastDisplayedScore = -1;
       setScore(0);
       setGameOver(false);
       setRankInfo(null);
@@ -125,9 +138,6 @@ export default function Game({
 
       while (tickAccumulatorMs >= TICK_MS && !engine.isGameOver()) {
         tickAccumulatorMs -= TICK_MS;
-
-        // Лог прыжков — вход replay-валидации на сервере: записывается
-        // ровно то, что подаётся в движок.
         const jumpRequested = pendingJump;
         pendingJump = false;
         if (jumpRequested) {
@@ -136,7 +146,11 @@ export default function Game({
         engine.tick(jumpRequested);
       }
 
-      setScore(engine.getScore());
+      const nextScore = engine.getScore();
+      if (nextScore !== lastDisplayedScore) {
+        lastDisplayedScore = nextScore;
+        setScore(nextScore);
+      }
 
       if (engine.isGameOver()) {
         setGameOver(true);
@@ -145,28 +159,33 @@ export default function Game({
     };
 
     const draw = () => {
-      ctx.fillStyle = "#f7f7f7";
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      drawSkyBackground(ctx, CANVAS_WIDTH, CANVAS_HEIGHT);
+      drawSkyDecor(ctx, CANVAS_WIDTH);
 
-      ctx.strokeStyle = "#535353";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(0, GROUND_Y);
-      ctx.lineTo(CANVAS_WIDTH, GROUND_Y);
-      ctx.stroke();
+      drawGround(ctx, GROUND_Y, CANVAS_WIDTH);
 
-      const dinoY = engine ? engine.getDino().y : GROUND_Y - DINO_HEIGHT;
-      ctx.fillStyle = activeSkinColorRef.current;
-      ctx.fillRect(DINO_X, dinoY, DINO_WIDTH, DINO_HEIGHT);
-      ctx.fillStyle = "#f7f7f7";
-      ctx.fillRect(DINO_X + 30, dinoY + 8, 6, 6);
+      const alpha = renderAlpha();
+      const scrollPx = engine && !engine.isGameOver() ? engine.getSpeed() * alpha : 0;
+
+      let dinoY = engine ? engine.getDino().y : GROUND_Y - DINO_HEIGHT;
+      if (engine && alpha > 0 && !engine.isGameOver()) {
+        dinoY += engine.getDino().velocityY * alpha;
+      }
+
+      drawStyledDino(
+        ctx,
+        DINO_X,
+        dinoY,
+        DINO_WIDTH,
+        DINO_HEIGHT,
+        activeSkinColorRef.current,
+      );
 
       if (engine) {
         for (const cactus of engine.getCacti()) {
           const cactusY = GROUND_Y - cactus.height;
-          ctx.fillStyle = "#535353";
-          ctx.fillRect(cactus.x, cactusY, cactus.width, cactus.height);
-          ctx.fillRect(cactus.x + cactus.width, cactusY + 10, 8, 4);
+          const renderX = cactus.x - scrollPx;
+          drawStyledCactus(ctx, renderX, cactusY, cactus.width, cactus.height);
         }
       }
     };
@@ -215,90 +234,78 @@ export default function Game({
   }, []);
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full max-w-[820px] mx-auto">
-      {onBack && (
-        <button
-          type="button"
-          onClick={onBack}
-          className="self-start px-3 py-1 text-sm border border-[#d0d0d0] rounded-sm text-[#535353] hover:bg-[#f0f0f0] transition-colors"
-        >
-          {ui.common.back}
-        </button>
-      )}
-
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-[#535353] tracking-tight">
-          {gameMeta.displayName}
-        </h1>
-        <p className="text-sm text-[#737373] mt-1">{ui.game.spaceJump}</p>
-      </div>
-
-      <div className="flex gap-8 font-mono text-lg text-[#535353]">
-        <span>{ui.game.score}: {score}</span>
-        <span>{ui.game.best}: {highScore}</span>
-        {gameOver && (
-          <span className="text-red-600 text-sm self-center">{ui.game.gameOver}</span>
+    <div className="game-screen">
+      <div className="topbar">
+        <span className="topbar-name">
+          {ui.game.score}: {score}
+        </span>
+        <span className="topbar-mid">
+          {ui.game.best} <b>{highScore}</b>
+        </span>
+        {onBack && (
+          <button type="button" className="topbar-exit" onClick={onBack}>
+            {ui.common.exit}
+          </button>
         )}
       </div>
 
-      <div className="relative">
+      {username && <p className="game-sub game-user-line">{username}</p>}
+
+      <div className="game-canvas-wrap">
         <canvas
           ref={canvasRef}
           width={CANVAS_WIDTH}
           height={CANVAS_HEIGHT}
           data-testid="game-canvas"
-          className="border-2 border-[#d0d0d0] rounded-sm shadow-sm bg-[#f7f7f7]"
           tabIndex={0}
           aria-label={ui.game.ariaLabel(gameMeta.displayName)}
         />
-
-        {gameOver && (
-          <div
-            className="absolute inset-0 flex items-center justify-center bg-[#f7f7f7]/80 rounded-sm"
-            data-testid="game-over-modal"
-          >
-            <div className="flex flex-col items-center gap-4 px-8 py-6 bg-white border-2 border-[#d0d0d0] rounded-sm shadow-sm">
-              <h2 className="text-xl font-bold text-[#535353]">{ui.game.gameOver}</h2>
-
-              <div className="flex gap-6 font-mono text-[#535353]">
-                <span>{ui.game.score}: {score}</span>
-                <span>{ui.game.best}: {highScore}</span>
-              </div>
-
-              {rankInfo && (
-                <p className="text-sm text-[#737373]">
-                  {ui.game.rankLine(rankInfo.rank, rankInfo.nextUsername)}
-                </p>
-              )}
-
-              {saveError && (
-                <p className="text-sm text-red-600" role="alert">
-                  {saveError}
-                </p>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => resetGameRef.current?.()}
-                  className="px-4 py-2 text-sm font-medium border border-[#535353] rounded-sm text-white bg-[#535353] hover:bg-[#3d3d3d] transition-colors"
-                >
-                  {ui.game.playAgain}
-                </button>
-                {onBack && (
-                  <button
-                    type="button"
-                    onClick={onBack}
-                    className="px-4 py-2 text-sm border border-[#d0d0d0] rounded-sm text-[#535353] hover:bg-[#f0f0f0] transition-colors"
-                  >
-                    {ui.common.back}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      <p className="game-sub game-hint">{ui.game.spaceJump}</p>
+
+      {gameOver && (
+        <div className="dead-overlay" data-testid="game-over-modal">
+          <div className="dead-title">{ui.game.gameOver}</div>
+          <div className="dead-score">
+            {ui.game.score}: {score}
+          </div>
+
+          {rankInfo && (
+            <div className="dead-rank">{ui.game.rankLine(rankInfo.rank, rankInfo.nextUsername)}</div>
+          )}
+
+          {saveError && (
+            <p className="alert-error" role="alert">
+              {saveError}
+            </p>
+          )}
+
+          <div className="btn-row">
+            <button
+              type="button"
+              onClick={() => resetGameRef.current?.()}
+              className="pbtn pbtn-primary"
+            >
+              {ui.game.playAgain}
+            </button>
+            {onOpenLeaderboard && (
+              <button
+                type="button"
+                onClick={onOpenLeaderboard}
+                className="pbtn pbtn-secondary"
+              >
+                {ui.game.toLeaderboard}
+              </button>
+            )}
+            {onBack && (
+              <button type="button" onClick={onBack} className="pbtn pbtn-secondary">
+                {ui.common.back}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

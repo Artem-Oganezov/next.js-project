@@ -1,155 +1,265 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import DinoSvg from "@/components/ui/DinoSvg";
+import { gameMeta } from "@/game/meta";
+import { SKINS } from "@/game/skins";
 import { ApiError, api } from "@/lib/client/api";
+import {
+  loginSchema,
+  registerSchema,
+  type LoginInput,
+  type RegisterInput,
+} from "@/lib/validation/auth";
 import { ui } from "@/lib/i18n/ui";
 import type { User } from "@/types/user";
 
 type Mode = "login" | "register";
 
-type AuthFormState = Pick<User, "username" | "email"> & {
-  password: string;
-};
-
-const initialForm: AuthFormState = {
-  username: "",
-  email: "",
-  password: "",
-};
-
 type AuthFormProps = {
   onSuccess: (user: User) => void;
 };
 
-export default function AuthForm({ onSuccess }: AuthFormProps) {
-  const [mode, setMode] = useState<Mode>("login");
-  const [form, setForm] = useState<AuthFormState>(initialForm);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const isRegister = mode === "register";
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedUsername = form.username.trim();
-    if (!trimmedUsername) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = isRegister
-        ? await api.register({
-            username: trimmedUsername,
-            email: form.email.trim(),
-            password: form.password,
-          })
-        : await api.login({
-            username: trimmedUsername,
-            password: form.password,
-          });
-
-      onSuccess(data.user);
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError(ui.common.networkError);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const switchMode = () => {
-    setMode((current) => (current === "login" ? "register" : "login"));
-    setError(null);
-  };
-
-  const update =
-    (field: keyof AuthFormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    };
+function AuthGameTitle() {
+  const accent = gameMeta.displayNameAccent;
+  const base = gameMeta.displayName.replace(accent, "").trim();
 
   return (
-    <div className="w-full max-w-sm mx-auto">
-      <h2 className="text-xl font-bold text-[#535353] tracking-tight text-center">
-        {isRegister ? ui.auth.register : ui.auth.login}
-      </h2>
+    <h1 className="auth-title">
+      {base}
+      <span className="game-title-accent">{accent}</span>
+    </h1>
+  );
+}
 
-      <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-3" noValidate>
-        <label className="flex flex-col gap-1 text-sm text-[#535353]">
-          {ui.auth.username}
-          <input
-            type="text"
-            name="username"
-            value={form.username}
-            onChange={update("username")}
-            autoComplete="username"
-            required
-            disabled={loading}
-            data-testid="auth-username"
-            className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white focus:outline-none focus:border-[#535353]"
-          />
-        </label>
+function LoginForm({ onSuccess }: { onSuccess: (user: User) => void }) {
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-        {isRegister && (
-          <label className="flex flex-col gap-1 text-sm text-[#535353]">
-            Email
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={update("email")}
-              autoComplete="email"
-              required
-              disabled={loading}
-              data-testid="auth-email"
-              className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white focus:outline-none focus:border-[#535353]"
-            />
-          </label>
-        )}
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginInput>({
+    defaultValues: { username: "", password: "" },
+    resolver: zodResolver(loginSchema),
+  });
 
-        <label className="flex flex-col gap-1 text-sm text-[#535353]">
-          {ui.auth.password}
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={update("password")}
-            autoComplete={isRegister ? "new-password" : "current-password"}
-            required
-            disabled={loading}
-            data-testid="auth-password"
-            className="px-3 py-2 border border-[#d0d0d0] rounded-sm bg-white focus:outline-none focus:border-[#535353]"
-          />
-        </label>
+  const authMutation = useMutation({
+    mutationFn: (values: LoginInput) =>
+      api.login({
+        username: values.username.trim(),
+        password: values.password,
+      }),
+    onSuccess: (data) => onSuccess(data.user),
+    onError: (err) => {
+      setSubmitError(err instanceof ApiError ? err.message : ui.common.networkError);
+    },
+  });
 
-        <button
-          type="submit"
+  const loading = isSubmitting || authMutation.isPending;
+
+  return (
+    <form
+      onSubmit={handleSubmit((values) => {
+        setSubmitError(null);
+        authMutation.mutate(values);
+      })}
+      className="flex flex-col gap-1"
+      noValidate
+    >
+      <label className="field-label">
+        {ui.auth.username}
+        <input
+          type="text"
+          autoComplete="username"
           disabled={loading}
-          data-testid="auth-submit"
-          className="mt-1 px-4 py-2 bg-[#535353] text-white rounded-sm font-medium hover:bg-[#404040] disabled:opacity-60 transition-colors"
-        >
-          {loading ? ui.auth.wait : isRegister ? ui.auth.register : ui.auth.login}
-        </button>
-      </form>
+          data-testid="auth-username"
+          className="field-input"
+          {...register("username")}
+        />
+      </label>
+      {errors.username && (
+        <p className="alert-error" role="alert">
+          {errors.username.message}
+        </p>
+      )}
 
-      {error && (
-        <p className="mt-2 text-sm text-red-600" role="alert">
-          {error}
+      <label className="field-label">
+        {ui.auth.password}
+        <input
+          type="password"
+          autoComplete="current-password"
+          disabled={loading}
+          data-testid="auth-password"
+          className="field-input"
+          {...register("password")}
+        />
+      </label>
+      {errors.password && (
+        <p className="alert-error" role="alert">
+          {errors.password.message}
+        </p>
+      )}
+
+      {submitError && (
+        <p className="alert-error" role="alert">
+          {submitError}
         </p>
       )}
 
       <button
-        type="button"
-        onClick={switchMode}
+        type="submit"
         disabled={loading}
-        data-testid="auth-switch-mode"
-        className="mt-4 w-full text-sm text-[#737373] hover:text-[#535353] transition-colors"
+        data-testid="auth-submit"
+        className="start-btn mt-3"
       >
-        {isRegister ? ui.auth.haveAccount : ui.auth.noAccount}
+        {loading ? ui.auth.wait : ui.auth.login}
       </button>
+    </form>
+  );
+}
+
+function RegisterForm({ onSuccess }: { onSuccess: (user: User) => void }) {
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterInput>({
+    defaultValues: { username: "", email: "", password: "" },
+    resolver: zodResolver(registerSchema),
+  });
+
+  const authMutation = useMutation({
+    mutationFn: (values: RegisterInput) =>
+      api.register({
+        username: values.username.trim(),
+        email: values.email.trim(),
+        password: values.password,
+      }),
+    onSuccess: (data) => onSuccess(data.user),
+    onError: (err) => {
+      setSubmitError(err instanceof ApiError ? err.message : ui.common.networkError);
+    },
+  });
+
+  const loading = isSubmitting || authMutation.isPending;
+
+  return (
+    <form
+      onSubmit={handleSubmit((values) => {
+        setSubmitError(null);
+        authMutation.mutate(values);
+      })}
+      className="flex flex-col gap-1"
+      noValidate
+    >
+      <label className="field-label">
+        {ui.auth.username}
+        <input
+          type="text"
+          autoComplete="username"
+          disabled={loading}
+          data-testid="auth-username"
+          className="field-input"
+          {...register("username")}
+        />
+      </label>
+      {errors.username && (
+        <p className="alert-error" role="alert">
+          {errors.username.message}
+        </p>
+      )}
+
+      <label className="field-label">
+        Email
+        <input
+          type="email"
+          autoComplete="email"
+          disabled={loading}
+          data-testid="auth-email"
+          className="field-input"
+          {...register("email")}
+        />
+      </label>
+      {errors.email && (
+        <p className="alert-error" role="alert">
+          {errors.email.message}
+        </p>
+      )}
+
+      <label className="field-label">
+        {ui.auth.password}
+        <input
+          type="password"
+          autoComplete="new-password"
+          disabled={loading}
+          data-testid="auth-password"
+          className="field-input"
+          {...register("password")}
+        />
+      </label>
+      {errors.password && (
+        <p className="alert-error" role="alert">
+          {errors.password.message}
+        </p>
+      )}
+
+      {submitError && (
+        <p className="alert-error" role="alert">
+          {submitError}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={loading}
+        data-testid="auth-submit"
+        className="start-btn mt-3"
+      >
+        {loading ? ui.auth.wait : ui.auth.register}
+      </button>
+    </form>
+  );
+}
+
+export default function AuthForm({ onSuccess }: AuthFormProps) {
+  const [mode, setMode] = useState<Mode>("login");
+  const isRegister = mode === "register";
+
+  return (
+    <div className="auth-shell">
+      <div className="auth-hero" aria-hidden>
+        <div className="auth-hero-dino">
+          <DinoSvg color={SKINS[0]?.color ?? "var(--coral)"} size={52} />
+        </div>
+      </div>
+
+      <div className="auth-card">
+        <AuthGameTitle />
+        <p className="auth-subtitle">
+          {isRegister ? ui.auth.joinGame : ui.auth.welcomeBack}
+        </p>
+
+        {isRegister ? (
+          <RegisterForm onSuccess={onSuccess} />
+        ) : (
+          <LoginForm onSuccess={onSuccess} />
+        )}
+
+        <button
+          type="button"
+          onClick={() => setMode(isRegister ? "login" : "register")}
+          data-testid="auth-switch-mode"
+          className="auth-switch"
+        >
+          {isRegister ? ui.auth.haveAccount : ui.auth.noAccount}
+        </button>
+      </div>
     </div>
   );
 }

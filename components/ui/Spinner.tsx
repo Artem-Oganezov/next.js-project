@@ -6,12 +6,9 @@ type SpinnerProps = {
 
 export default function Spinner({ label = ui.common.loading }: SpinnerProps) {
   return (
-    <div className="flex flex-col items-center gap-3 text-[#535353]" role="status">
-      <div
-        className="h-8 w-8 rounded-full border-2 border-[#d0d0d0] border-t-[#535353] animate-spin"
-        aria-hidden
-      />
-      <span className="text-sm">{label}</span>
+    <div className="spinner-wrap" role="status">
+      <div className="spinner-ring" aria-hidden />
+      <span style={{ fontSize: 13, fontWeight: 700 }}>{label}</span>
     </div>
   );
 }

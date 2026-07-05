@@ -82,6 +82,10 @@ export const api = {
       method: "POST",
       json: { score, sessionId, inputLog },
     }),
+  getLeaderboard: () =>
+    apiFetch<{ leaderboard: { username: string; bestScore: number }[] }>(
+      "/api/leaderboard",
+    ),
   getLeaderboardRank: () =>
     apiFetch<{ rank: number; nextUsername: string | null }>("/api/leaderboard/rank"),
   unlockSkin: (skinId: string) =>

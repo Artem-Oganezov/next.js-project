@@ -21,7 +21,7 @@ test.describe("Game E2E", () => {
       timeout: 25_000,
     });
 
-    await expect(page.getByText("Игра окончена")).toBeVisible();
+    await expect(page.getByText("Game over!")).toBeVisible();
     // Ошибка сохранения не должна появиться при рабочем API.
     await expect(page.getByRole("alert")).toHaveCount(0);
   });

@@ -1,9 +1,11 @@
 import AuthGate from "@/components/AuthGate";
+import SiteFooter from "@/components/SiteFooter";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#fafafa]">
+    <main className="app-shell">
       <AuthGate />
+      <SiteFooter />
     </main>
   );
 }

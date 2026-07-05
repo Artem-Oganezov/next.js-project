@@ -13,9 +13,9 @@ export type SkinDefinition = {
 };
 
 export const SKINS: SkinDefinition[] = [
-  { id: "default", name: "Classic", color: "#535353", price: 0 },
-  { id: "blue", name: "Ocean", color: "#2c5282", price: 200 },
-  { id: "orange", name: "Fire", color: "#c05621", price: 500 },
-  { id: "purple", name: "Shadow", color: "#553c9a", price: 1000 },
-  { id: "gold", name: "Legend", color: "#b7791f", price: 2000 },
+  { id: "default", name: "Coral", color: "#ff6f5e", price: 0 },
+  { id: "blue", name: "Grape", color: "#7c5cff", price: 200 },
+  { id: "orange", name: "Honey", color: "#ffb84d", price: 500 },
+  { id: "purple", name: "Bubble", color: "#ff6ec7", price: 1000 },
+  { id: "gold", name: "Mint", color: "#4fd1c5", price: 2000 },
 ];

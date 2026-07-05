@@ -17,6 +17,8 @@ export type ScoreSavedResult = {
 };
 
 export type GameComponentProps = {
+  /** Никнейм для topbar (опционально). */
+  username?: string;
   /** Текущий рекорд юзера (для отображения). */
   initialBestScore?: number;
   /** Цвет активного скина; игнорируй, если скины выключены. */
@@ -25,4 +27,6 @@ export type GameComponentProps = {
   onScoreSaved?: (result: ScoreSavedResult) => void;
   /** Кнопка «Назад» в shell. */
   onBack?: () => void;
+  /** Переход на экран рейтинга (game over). */
+  onOpenLeaderboard?: () => void;
 };

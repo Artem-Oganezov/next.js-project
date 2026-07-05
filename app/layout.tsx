@@ -1,21 +1,47 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Baloo_2, Nunito } from "next/font/google";
+import Providers from "@/components/Providers";
 import { gameMeta } from "@/game/meta";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const baloo = Baloo_2({
+  variable: "--font-baloo",
+  subsets: ["latin", "latin-ext"],
+  weight: ["500", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const nunito = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "600", "700", "800"],
 });
+
+const siteUrl = process.env.APP_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
-  title: `${gameMeta.displayName} — онлайн-игра с рекордами`,
+  metadataBase: new URL(siteUrl),
+  title: `${gameMeta.displayName} — online game with leaderboards`,
   description: gameMeta.description,
+  openGraph: {
+    title: `${gameMeta.displayName} — online game with leaderboards`,
+    description: gameMeta.description,
+    type: "website",
+    siteName: gameMeta.displayName,
+    images: [
+      {
+        url: "/og.svg",
+        width: 1200,
+        height: 630,
+        alt: `${gameMeta.displayName} preview`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${gameMeta.displayName} — online game with leaderboards`,
+    description: gameMeta.description,
+    images: ["/og.svg"],
+  },
 };
 
 export default function RootLayout({
@@ -24,9 +50,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
+    <html lang="en">
+      <body className={`${baloo.variable} ${nunito.variable} antialiased`}>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

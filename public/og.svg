@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#fff3f0"/>
+  <rect x="0" y="420" width="1200" height="210" fill="#ffe0d2"/>
+  <circle cx="980" cy="120" r="90" fill="#ffb84d" opacity="0.55"/>
+  <text x="80" y="180" fill="#3b2b4a" font-family="Arial, sans-serif" font-size="72" font-weight="800">Dino</text>
+  <text x="290" y="180" fill="#ff6f5e" font-family="Arial, sans-serif" font-size="72" font-weight="800">Run</text>
+  <text x="80" y="250" fill="#8a7a98" font-family="Arial, sans-serif" font-size="32" font-weight="600">Online scores · Leaderboard · Anti-cheat</text>
+  <rect x="120" y="300" width="48" height="44" rx="12" fill="#ff6f5e"/>
+  <rect x="156" y="276" width="28" height="28" rx="14" fill="#ff6f5e"/>
+  <rect x="520" y="360" width="16" height="56" rx="8" fill="#7c5cff"/>
+  <rect x="500" y="392" width="24" height="12" rx="6" fill="#7c5cff"/>
+</svg>

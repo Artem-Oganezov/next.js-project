@@ -1,12 +1,13 @@
 /** Client UI strings (English). */
 export const ui = {
   common: {
-    back: "Back",
+    back: "← Back",
     loading: "Loading…",
     retry: "Retry",
     error: "Something went wrong",
     networkError: "Network error",
     requestFailed: "Request failed",
+    exit: "Exit",
   },
   auth: {
     login: "Log in",
@@ -30,6 +31,8 @@ export const ui = {
     deleteAccount: "Delete account",
     deleteConfirm: "Enter your password to permanently delete your account.",
     accountDeleted: "Account deleted",
+    welcomeBack: "Welcome back!",
+    joinGame: "Join the leaderboard",
   },
   nav: {
     home: "Home",
@@ -43,33 +46,87 @@ export const ui = {
     leaderboard: "Leaderboard",
     loadLeaderboardFailed: "Could not load leaderboard",
     skins: "Skins",
-    points: "Points",
+    points: "pts",
+    viewAllLeaderboard: "Full leaderboard →",
+    youSuffix: " (you)",
+    subtitle: "Tap or press space to jump",
   },
   profile: {
     title: "Profile",
-    bestScore: "Best",
-    points: "Points",
-    rank: "Rank",
+    bestScore: "Best score",
+    points: "Total points",
+    rank: "Leaderboard rank",
     rankOutsideTop: "Outside top 10",
     loadRankFailed: "Could not load rank",
     skins: "Skins",
+    skinsUnlocked: "Skins unlocked",
     loadSkinsFailed: "Could not load skins",
     equipSkinFailed: "Could not equip skin",
     buySkinFailed: "Could not unlock skin",
+    accountSettings: "Account settings",
+  },
+  legal: {
+    navLabel: "Legal",
+    privacy: "Privacy",
+    terms: "Terms",
+    footerNote: "Template stub pages — replace before public launch.",
+    lastUpdated: "Last updated: July 2026",
+    privacyTitle: "Privacy Policy",
+    privacySummary: "How we collect and use data in this game template.",
+    termsTitle: "Terms of Service",
+    termsSummary: "Rules for using this game template.",
+    privacySections: {
+      overview: {
+        title: "Overview",
+        body: "This page is a placeholder for your privacy policy. Before launching publicly, replace it with a policy that matches your jurisdiction, analytics tools, and hosting providers.",
+      },
+      collect: {
+        title: "Data we collect",
+        body: "The template stores account credentials (hashed password), username, email, game scores, and session tokens required to run leaderboards and anti-cheat. No payment data is collected by default.",
+      },
+      use: {
+        title: "How we use data",
+        body: "Data is used to authenticate users, save high scores, display leaderboards, and detect fraudulent score submissions. Logs may include request IDs for debugging.",
+      },
+      contact: {
+        title: "Contact",
+        body: "Add your support email or contact form URL here before launch.",
+      },
+    },
+    termsSections: {
+      acceptance: {
+        title: "Acceptance",
+        body: "By creating an account or playing the game, users agree to these terms. Replace this stub with terms reviewed for your target market.",
+      },
+      accounts: {
+        title: "Accounts",
+        body: "Users must provide accurate registration details and keep credentials secure. We may suspend accounts that cheat, abuse the service, or violate fair play rules.",
+      },
+      conduct: {
+        title: "Fair play",
+        body: "Automated score submission, replay manipulation, and attempts to bypass server validation are prohibited. Scores may be rejected or accounts banned without notice.",
+      },
+      liability: {
+        title: "Disclaimer",
+        body: "The service is provided as-is without warranties. The operator is not liable for downtime, data loss, or indirect damages to the extent permitted by applicable law.",
+      },
+    },
   },
   leaderboard: {
-    title: "Leaderboard",
+    title: "Top 10",
     loadFailed: "Could not load leaderboard",
     empty: "No scores yet",
+    yourPosition: "— your position —",
   },
   game: {
     score: "Score",
     best: "Best",
-    gameOver: "Game over",
-    spaceJump: "Space or ↑ to jump",
+    gameOver: "Game over!",
+    spaceJump: "Tap or press space to jump",
     rankLine: (rank: number, next: string | null) =>
       next ? `#${rank} — beat ${next}!` : `#${rank}`,
     playAgain: "Play again",
+    toLeaderboard: "Leaderboard",
     sessionStartFailed: "Could not start server session — score will not be saved",
     sessionMissing: "Run was not registered — score not saved",
     saveFailed: "Could not save score — check your connection",

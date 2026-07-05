@@ -1,91 +1,61 @@
-# Архитектура
+# Architecture
 
-## Слои
+## Layers
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│ SHELL (не знает игру)                                │
+│ SHELL (game-agnostic)                                │
 │  components/AuthGate, HomeScreen, Leaderboard,       │
 │  Profile, AuthForm · app/layout · lib/client/api     │
 └──────────────────────┬───────────────────────────────┘
-                       │ импортирует только @/game
+                       │ imports only @/game
 ┌──────────────────────▼───────────────────────────────┐
-│ GAME (меняется под игру)                             │
+│ GAME (swap per project)                              │
 │  game/Game.tsx · constants · types · skins · meta    │
-│  контракт: game/contract.ts                          │
+│  contract: game/contract.ts                          │
 └──────────────────────┬───────────────────────────────┘
                        │ api.startGameSession / submitScore
 ┌──────────────────────▼───────────────────────────────┐
-│ API (универсальный, игру не знает)                   │
+│ API (universal, game-agnostic)                       │
 │  app/api/auth/* · game/* · leaderboard/* · skins ·   │
-│  health · единственная game-точка: lib/game/plugin   │
+│  health · single game hook: lib/game/plugin          │
 └──────────┬──────────────────────────┬────────────────┘
            │                          │
 ┌──────────▼──────────┐    ┌──────────▼────────────────┐
 │ MongoDB             │    │ Redis                     │
-│ source of truth:    │    │ hot path: ZSET рейтинга,  │
-│ User, Session,      │    │ кэш топ-10, rate limit    │
-│ GameSession (TTL)   │    │ (fail-open при падении)   │
+│ source of truth:    │    │ hot path: rank ZSET,      │
+│ User, Session,      │    │ top-10 cache, rate limit  │
+│ GameSession (TTL)   │    │ (fail-open on outage)     │
 └─────────────────────┘    └───────────────────────────┘
 ```
 
-## Ключевые решения
+## Key decisions
 
-**Один деплой = одна игра.** Никакого `gameId` в БД и API. Новая игра —
-новый форк с новым `.env`.
+**One deploy = one game.** No `gameId` in the database or API. A new game means a new fork with its own `.env`.
 
-**`lib/game/plugin.ts` — единственная game-точка бэкенда.** Роуты
-импортируют `gamePlugin` и не знают, что за игра. Метаданные (название,
-фичи) — в `game/meta.ts`, plugin их переиспользует.
+**`lib/game/plugin.ts` is the only game-specific backend hook.** Routes import `gamePlugin` and do not know which game runs. Metadata (name, features) lives in `game/meta.ts`; the plugin reuses it.
 
-**Anti-cheat — эвристики + серверный replay.** Одноразовые партии
-(`GameSession`, атомарный claim через `findOneAndUpdate`), лимит
-очков/сек, мин/макс длительность. Поверх — replay-валидация: игра
-детерминирована (fixed timestep 60 тиков/сек, `game/engine.ts`),
-клиент шлёт лог прыжков, сервер прогоняет партию по seed и сверяет
-счёт бит-в-бит (`gamePlugin.validateReplay`, опционален для игр без
-детерминированного движка). Подозрительные сабмиты — в stderr
-со `scope: "anti-cheat"`.
+**Anti-cheat — heuristics + server replay.** One-time sessions (`GameSession`, atomic claim via `findOneAndUpdate`), score-per-second cap, min/max duration. On top of that, replay validation: the game is deterministic (fixed timestep 60 ticks/sec, `game/engine.ts`); the client sends a jump log; the server replays the run from the seed and compares the score bit-for-bit (`gamePlugin.validateReplay`, optional for non-deterministic games). Suspicious submissions go to stderr with `scope: "anti-cheat"`.
 
-**Redis деградирует, не роняет.** Rank → fallback на Mongo
-`countDocuments`; топ-10 → прямой запрос; rate limit → fail-open
-(осознанно: лимитер не должен ронять API; жёсткий режим —
-`RATE_LIMIT_FAIL_CLOSED=true`, тогда 429 при падении Redis).
-`GET /api/health` возвращает `degraded` — видно в мониторинге.
+**Redis degrades gracefully.** Rank falls back to Mongo `countDocuments`; top-10 falls back to a direct query; rate limiting is fail-open by default (the limiter must not take down the API; strict mode via `RATE_LIMIT_FAIL_CLOSED=true` returns 429 when Redis is down). `GET /api/health` returns `degraded` for monitoring.
 
-**Сессии.** Токен (32 байта) в httpOnly cookie; в Mongo — только
-SHA-256(token + AUTH_SECRET). TTL-индексы чистят истёкшие Session
-и GameSession. Кап одновременных сессий на юзера
-(`MAX_SESSIONS_PER_USER`): при логине старейшие сверх лимита удаляются —
-забытые куки не живут до конца TTL.
+**Sessions.** Token (32 bytes) in an httpOnly cookie; Mongo stores only SHA-256(token + AUTH_SECRET). TTL indexes clean expired Session and GameSession records. Cap on concurrent sessions per user (`MAX_SESSIONS_PER_USER`): on login, oldest sessions beyond the cap are removed — forgotten cookies do not live until TTL expiry.
 
-**requestId.** Каждый API-ответ несёт `X-Request-Id`; ошибки в логах
-содержат тот же id — баг-репорт сопоставляется с логом сервера.
+**requestId.** Every API response includes `X-Request-Id`; server error logs use the same id — bug reports map to server logs.
 
-**Observability.** In-process счётчики (`lib/observability/metrics.ts`):
-HTTP-запросы по scope/status, отказы rate limit, anti-cheat rejections.
-`GET /api/metrics` — Prometheus text; `GET /api/health` — краткая сводка.
+**Observability.** In-process counters (`lib/observability/metrics.ts`): HTTP requests by scope/status, rate-limit denials, anti-cheat rejections. `GET /api/metrics` — Prometheus text; `GET /api/health` — short summary.
 
-**Модерация.** Подозрительные сабмиты → MongoDB + stderr. Админка `/admin`
-и `GET /api/admin/submissions` (заголовок `X-Admin-Secret` = `ADMIN_SECRET`).
-Бан сбрасывает сессии и блокирует login.
+**Moderation.** Suspicious submissions → MongoDB + stderr. Admin UI at `/admin` and `GET /api/admin/submissions` (header `X-Admin-Secret` = `ADMIN_SECRET`). Bans invalidate sessions and block login.
 
-## Потоки данных
+## Data flows
 
-**Сабмит счёта:** cookie-сессия → rate limit (IP + userId) → Zod →
-GameSession существует и не закрыта → validateScore (время/потолок) →
-validateReplay (прогон партии по seed + jumpTicks, счёт бит-в-бит) →
-атомарный claim → обновление User → ZSET + инвалидация топ-10 → rank.
+**Score submit:** cookie session → rate limit (IP + userId) → Zod → GameSession exists and is open → validateScore (time/ceiling) → validateReplay (replay from seed + jumpTicks, score bit-for-bit) → atomic claim → update User → ZSET + invalidate top-10 → rank.
 
-**Ранг:** Redis ZSET O(log N); пустой ZSET один раз засеивается из Mongo
-курсором; при недоступном Redis — счёт по индексу `bestScore`.
+**Rank:** Redis ZSET O(log N); empty ZSET is seeded once from Mongo via cursor; when Redis is unavailable — count by `bestScore` index.
 
-## Известные границы (осознанные)
+## Known boundaries (intentional)
 
-- Replay доказывает партию по правилам, но не отличает человека от бота,
-  честно проходящего игру (поведенческий анализ вне скоупа).
-- Rate limit по умолчанию fail-open при падении Redis
-  (опционально fail-closed через `RATE_LIMIT_FAIL_CLOSED=true`).
-- Обновление User + ZSET не в транзакции: при сбое между ними рассинхрон
-  чинится самовосстановлением ZSET при следующем чтении rank.
-- Равные `bestScore` делят один rank (и в Redis, и в Mongo — консистентно).
+- Replay proves a run followed the rules but does not distinguish a human from a bot playing honestly (behavioral analysis is out of scope).
+- Rate limiting is fail-open by default when Redis is down (optional fail-closed via `RATE_LIMIT_FAIL_CLOSED=true`).
+- User update + ZSET are not in a transaction: if something fails between them, ZSET self-heals on the next rank read.
+- Equal `bestScore` values share the same rank (consistent in Redis and Mongo).
