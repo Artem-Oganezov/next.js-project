@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Baloo_2, Nunito } from "next/font/google";
 import Providers from "@/components/Providers";
 import { gameMeta } from "@/game/meta";
@@ -42,6 +42,13 @@ export const metadata: Metadata = {
     description: gameMeta.description,
     images: ["/og.svg"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#fff3f0",
 };
 
 export default function RootLayout({

@@ -46,6 +46,7 @@ export default function Game({
     rank: number;
     nextUsername: string | null;
   } | null>(null);
+  const [jumpHint, setJumpHint] = useState<string>(ui.game.spaceJump);
   const onScoreSavedRef = useRef(onScoreSaved);
   const activeSkinColorRef = useRef(activeSkinColor);
 
@@ -60,6 +61,25 @@ export default function Game({
   useEffect(() => {
     activeSkinColorRef.current = activeSkinColor;
   }, [activeSkinColor]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(pointer: coarse)");
+    const syncHint = () => {
+      setJumpHint(media.matches ? ui.game.tapJump : ui.game.spaceJump);
+    };
+    syncHint();
+    media.addEventListener("change", syncHint);
+    return () => media.removeEventListener("change", syncHint);
+  }, []);
+
+  useEffect(() => {
+    if (!reviveOffer && !gameOver) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [reviveOffer, gameOver]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -346,14 +366,21 @@ export default function Game({
         />
       </div>
 
-      <p className="game-sub game-hint">{ui.game.spaceJump}</p>
+      {!reviveOffer && !gameOver && (
+        <p className="game-sub game-hint">{jumpHint}</p>
+      )}
 
       {reviveOffer && (
         <div className="dead-overlay" data-testid="revive-offer-modal">
-          <div className="dead-title">{ui.game.reviveTitle}</div>
+          <div className="dead-title">
+            {REVIVE_AD_ENABLED ? ui.game.reviveTitle : ui.game.reviveEndTitle}
+          </div>
           <div className="dead-score">
             {ui.game.score}: {score}
           </div>
+          {REVIVE_AD_ENABLED && (
+            <span className="revive-once-badge">{ui.game.reviveOnceBadge}</span>
+          )}
           <p className="game-sub revive-hint">
             {REVIVE_AD_ENABLED ? ui.game.reviveHint : ui.game.reviveHintNoAd}
           </p>

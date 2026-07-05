@@ -14,7 +14,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 - **Live prod checklist:** [docs/LIVE-PROD.md](docs/LIVE-PROD.md).
 
 ### Changed
-- README API table and deploy checklist updated for auth routes and email flows.
+- Revive ad default is **`none`** (soft launch); set `stub` in `.env.local` for local ad testing.
+- Mobile/desktop revive overlay polish (viewport, safe areas, touch targets, jump hints).
 - Version bumped to **1.6.0**.
 
 ## [1.5.0] — 2026-07-05

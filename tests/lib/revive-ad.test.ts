@@ -72,10 +72,10 @@ describe("revive ad provider", () => {
     await expect(promise).resolves.toBe("completed");
   });
 
-  it("resolveReviveAdProviderMode defaults to stub", () => {
+  it("resolveReviveAdProviderMode defaults to none (soft launch)", () => {
     vi.unstubAllEnvs();
     delete process.env.NEXT_PUBLIC_REVIVE_AD_PROVIDER;
-    expect(resolveReviveAdProviderMode()).toBe("stub");
+    expect(resolveReviveAdProviderMode()).toBe("none");
   });
 
   it("isReviveAdEnabled is false when provider is none", async () => {

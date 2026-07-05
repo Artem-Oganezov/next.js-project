@@ -16,7 +16,8 @@ export function resolveReviveAdProviderMode(): ReviveAdProviderMode {
   if (raw === "none" || raw === "slot" || raw === "stub") {
     return raw;
   }
-  return "stub";
+  // Soft launch default: no ad button unless explicitly configured.
+  return "none";
 }
 
 export function isReviveAdEnabled(): boolean {

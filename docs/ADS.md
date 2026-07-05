@@ -14,16 +14,22 @@ The server does **not** verify that an ad was shown — same as most browser gam
 ## Environment
 
 ```env
-# stub — fake delay (local dev, default)
-# slot  — mount point + custom script via window events
-# none  — hide “Watch ad”, only “Save score”
-NEXT_PUBLIC_REVIVE_AD_PROVIDER=stub
+# none  — soft launch default: save score / play again on first death
+# stub  — local dev: fake ad delay before continue
+# slot  — production web interstitial via window events
+NEXT_PUBLIC_REVIVE_AD_PROVIDER=none
 
-# stub delay in ms (optional, default 1200)
+# stub delay in ms (optional, default 1200) — only when provider=stub
 NEXT_PUBLIC_REVIVE_AD_STUB_MS=1200
 
 # slot mode: DOM id for the ad mount node (required for slot)
 NEXT_PUBLIC_REVIVE_AD_SLOT_ID=revive-ad-slot
+```
+
+For local ad-flow testing, set in `.env.local`:
+
+```env
+NEXT_PUBLIC_REVIVE_AD_PROVIDER=stub
 ```
 
 ## Mode: `stub`

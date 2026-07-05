@@ -737,6 +737,7 @@ body {
   display: block;
   width: 100%;
   height: auto;
+  touch-action: manipulation;
 }
 
 .dead-overlay {
@@ -749,8 +750,14 @@ body {
   justify-content: center;
   gap: 14px;
   z-index: 300;
-  padding: 24px;
+  padding: max(24px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
   text-align: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dead-title {
@@ -779,6 +786,17 @@ body {
   line-height: 1.45;
 }
 
+.revive-once-badge {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--violet-dark);
+  background: var(--pink-bg);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
 .revive-ad-slot:empty {
   display: none;
 }
@@ -797,8 +815,28 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: min(240px, 100%);
+  width: min(280px, 100%);
   margin-top: 6px;
+}
+
+.dead-overlay .pbtn {
+  min-height: 48px;
+  font-size: 16px;
+}
+
+@media (max-width: 480px) {
+  .game-screen {
+    max-width: none;
+    padding: 0 12px max(20px, env(safe-area-inset-bottom));
+  }
+
+  .dead-title {
+    font-size: 26px;
+  }
+
+  .topbar {
+    padding: 10px 0;
+  }
 }
 
 /* ── SPINNER ── */
