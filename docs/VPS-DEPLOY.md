@@ -75,19 +75,35 @@ See `nginx.example.conf` in the repo root. After editing:
 sudo certbot --nginx -d your-domain.com
 ```
 
-## 6. Scaling to multiple app nodes
+## 6. Async score worker (traffic spikes)
+
+When `SCORE_ASYNC=true` in `.env`:
+
+```bash
+docker compose up -d --build   # starts app + redis + worker
+```
+
+The worker runs `node score-worker.cjs` (bundled at image build). Scale workers:
+
+```bash
+docker compose up -d --scale worker=2
+```
+
+Requires **TCP** `REDIS_URL` (shared across app nodes and workers). See [INFLUENCER-LAUNCH.md](INFLUENCER-LAUNCH.md).
+
+## 7. Scaling to multiple app nodes
 
 1. MongoDB and Redis must be **shared** and reachable from every node.
 2. Deploy the same Docker image + **identical** `.env` (`AUTH_SECRET` must match).
 3. Add each node to the load balancer upstream.
 4. Health check: `GET /api/health` returns `503` when Mongo is down — remove unhealthy nodes from rotation.
 
-## 7. Backups
+## 8. Backups
 
 - **MongoDB:** Atlas backups, or `mongodump` on a cron job to object storage.
 - **Redis:** ephemeral (cache + rate limit); no backup required unless you store critical state there.
 
-## 8. Operations checklist
+## 9. Operations checklist
 
 - [ ] `GET /api/health` → `status: ok`
 - [ ] Register → verification email in logs or inbox

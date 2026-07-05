@@ -242,13 +242,15 @@ describe("Game score API", () => {
         password: "password12",
       }),
     );
-    const { sessionId } = await startGameSession();
-    await backdateGameSession(sessionId, 10);
+    const { sessionId, seed } = await startGameSession();
+    const run = playHonestGame(seed, 50);
+    await backdateGameSession(sessionId, 1);
 
     const response = await scorePost(
       jsonRequest("http://localhost/api/game/score", "POST", {
-        score: 9999,
+        score: run.score,
         sessionId,
+        inputLog: run.jumpTicks,
       }),
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
@@ -281,7 +283,7 @@ describe("Game score API", () => {
     expect(body.message).toMatch(/does not match/i);
   });
 
-  it("POST /api/game/score rejects too short game with 403", async () => {
+  it("POST /api/game/score rejects score above ceiling for elapsed time", async () => {
     await registerPost(
       jsonRequest("http://localhost/api/auth/register", "POST", {
         username: "speedrunner",
@@ -289,17 +291,19 @@ describe("Game score API", () => {
         password: "password12",
       }),
     );
-    const { sessionId } = await startGameSession();
+    const { sessionId, seed } = await startGameSession();
+    const run = playHonestGame(seed, 0);
 
     const response = await scorePost(
       jsonRequest("http://localhost/api/game/score", "POST", {
-        score: 3,
+        score: run.score,
         sessionId,
+        inputLog: run.jumpTicks,
       }),
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(403);
-    expect(body.message).toMatch(/too short/i);
+    expect(body.message).toMatch(/too high/i);
   });
 
   it("POST /api/game/score rejects duplicate submit for same session", async () => {

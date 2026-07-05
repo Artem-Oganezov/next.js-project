@@ -11,6 +11,9 @@
 import { GAME_CONFIG } from "@/game/constants";
 import type { Cactus, DinoState } from "@/game/types";
 import { createSeededRandom } from "@/lib/game/seeded-random";
+import { TICKS_PER_SECOND } from "@/game/score-config";
+
+export { TICKS_PER_SECOND };
 
 const {
   CANVAS_WIDTH,
@@ -24,9 +27,6 @@ const {
   SCORE_PER_FRAME,
   REVIVE_INVINCIBILITY_TICKS,
 } = GAME_CONFIG;
-
-/** Фиксированный шаг симуляции — не зависит от fps устройства. */
-export const TICKS_PER_SECOND = 60;
 
 export type DinoEngine = {
   /** Один шаг симуляции; jumpRequested — был ли ввод прыжка на этом тике. */

@@ -35,6 +35,8 @@ export const msg = {
     tooManyRequests: "Too many requests",
     reviveUnavailable: "Revive is not available for this run",
     reviveMismatch: "Revive data does not match session",
+    saveFailed: "Could not save score — check your connection",
+    scoreJobNotFound: "Score save job not found",
   },
   skins: {
     skinIdRequired: "skinId is required",

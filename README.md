@@ -8,6 +8,7 @@ Principle: **1 repo = 1 game**. A new game is a new fork (see
 [docs/NEW_GAME.md](docs/NEW_GAME.md), ~2 hour checklist).
 
 Docs: [New game](docs/NEW_GAME.md) · [Deploy](docs/DEPLOY.md) ·
+[Influencer launch](docs/INFLUENCER-LAUNCH.md) ·
 [Live prod checklist](docs/LIVE-PROD.md) · [Revive ads](docs/ADS.md) ·
 [VPS + HTTPS](docs/VPS-DEPLOY.md) · [Architecture](docs/ARCHITECTURE.md) ·
 [Changelog](CHANGELOG.md)
@@ -112,7 +113,7 @@ Remaining boundary: replay proves the run followed game rules, not that a human 
 
 ## Deploy on VPS (Docker)
 
-See [docs/VPS-DEPLOY.md](docs/VPS-DEPLOY.md) for HTTPS, nginx, and `TRUST_PROXY`.
+See [docs/VPS-DEPLOY.md](docs/VPS-DEPLOY.md) for HTTPS, nginx, `TRUST_PROXY`, and async score worker (`SCORE_ASYNC=true`).
 
 ```bash
 git clone <repo> && cd <repo>

@@ -1,12 +1,7 @@
-export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
+import { ApiError } from "@/lib/client/api-error";
+import { submitGameScore } from "@/lib/client/submit-score";
+
+export { ApiError };
 
 type ApiFetchOptions = RequestInit & {
   json?: unknown;
@@ -76,17 +71,12 @@ export const api = {
       method: "POST",
       json: { sessionId },
     }),
-  submitScore: (score: number, sessionId: string, inputLog: unknown) =>
-    apiFetch<{
-      bestScore: number;
-      totalScore: number;
-      isNewRecord: boolean;
-      rank: number;
-      nextUsername: string | null;
-    }>("/api/game/score", {
-      method: "POST",
-      json: { score, sessionId, inputLog },
-    }),
+  submitScore: (
+    score: number,
+    sessionId: string,
+    inputLog: unknown,
+    onSaving?: (saving: boolean) => void,
+  ) => submitGameScore(score, sessionId, inputLog, onSaving),
   getLeaderboard: () =>
     apiFetch<{ leaderboard: { username: string; bestScore: number }[] }>(
       "/api/leaderboard",

@@ -46,6 +46,11 @@ const envSchema = z
       .enum(["true", "false"])
       .optional()
       .transform((value) => value === "true"),
+    // Async score queue (VPS + score worker). Requires REDIS_URL (TCP), not Upstash-only.
+    SCORE_ASYNC: z
+      .enum(["true", "false"])
+      .optional()
+      .transform((value) => value === "true"),
     NODE_ENV: z.enum(["development", "production", "test"]).optional(),
   })
   .superRefine((env, ctx) => {
@@ -86,6 +91,7 @@ export function getEnv(): Env {
     SMTP_PASS: process.env.SMTP_PASS,
     EMAIL_FROM: process.env.EMAIL_FROM,
     TRUST_PROXY: process.env.TRUST_PROXY,
+    SCORE_ASYNC: process.env.SCORE_ASYNC,
     NODE_ENV: process.env.NODE_ENV,
   });
 

@@ -51,7 +51,19 @@ describe("validateGameScore", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.message).toMatch(/too short/i);
+      expect(result.code).toBe("run-too-short");
     }
+  });
+
+  it("accepts short wall clock when replay ticks meet minimum", () => {
+    const result = validateGameScore(
+      5,
+      startedAt,
+      config,
+      new Date(startedAt.getTime() + 500),
+      { replayTicks: 200 },
+    );
+    expect(result.ok).toBe(true);
   });
 
   it("rejects expired session", () => {

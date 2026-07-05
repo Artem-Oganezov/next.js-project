@@ -83,7 +83,7 @@ export const ui = {
     navLabel: "Legal",
     privacy: "Privacy",
     terms: "Terms",
-    footerNote: "Template stub pages — replace before public launch.",
+    footerNote: "Scores are validated server-side. Contact support for account issues.",
     lastUpdated: "Last updated: July 2026",
     privacyTitle: "Privacy Policy",
     privacySummary: "How we collect and use data in this game template.",
@@ -92,19 +92,19 @@ export const ui = {
     privacySections: {
       overview: {
         title: "Overview",
-        body: "This page is a placeholder for your privacy policy. Before launching publicly, replace it with a policy that matches your jurisdiction, analytics tools, and hosting providers.",
+        body: "This policy describes how Dino Run collects, uses, and protects your information when you create an account, play the game, or use leaderboard features.",
       },
       collect: {
         title: "Data we collect",
-        body: "The template stores account credentials (hashed password), username, email, game scores, and session tokens required to run leaderboards and anti-cheat. No payment data is collected by default.",
+        body: "We store your username, email address, bcrypt-hashed password, game scores (best and total), unlocked skins, session tokens (httpOnly cookies), and anti-cheat logs for suspicious score submissions. We do not collect payment information.",
       },
       use: {
         title: "How we use data",
-        body: "Data is used to authenticate users, save high scores, display leaderboards, and detect fraudulent score submissions. Logs may include request IDs for debugging.",
+        body: "Your data powers authentication, leaderboard rankings, skin unlocks, password reset and email verification, and server-side anti-cheat (replay validation). Server logs may include request IDs for debugging and abuse prevention.",
       },
       contact: {
         title: "Contact",
-        body: "Add your support email or contact form URL here before launch.",
+        body: "For privacy requests or account support, contact the operator at the email address published on this site before launch.",
       },
       ads: {
         title: "Advertising",
@@ -118,11 +118,11 @@ export const ui = {
     termsSections: {
       acceptance: {
         title: "Acceptance",
-        body: "By creating an account or playing the game, users agree to these terms. Replace this stub with terms reviewed for your target market.",
+        body: "By creating an account or playing Dino Run you agree to these Terms of Service and our Privacy Policy.",
       },
       accounts: {
         title: "Accounts",
-        body: "Users must provide accurate registration details and keep credentials secure. We may suspend accounts that cheat, abuse the service, or violate fair play rules.",
+        body: "You must provide accurate registration details and keep your password secure. We may suspend or ban accounts that cheat, abuse the service, or disrupt fair play.",
       },
       conduct: {
         title: "Fair play",
@@ -156,9 +156,19 @@ export const ui = {
     playAgain: "Play again",
     restartRun: "Restart",
     toLeaderboard: "Leaderboard",
-    sessionStartFailed: "Could not start server session — score will not be saved",
+    sessionStartFailed: "Could not start server session",
+    sessionLoading: "Starting run…",
+    sessionRetry: "Retry",
     sessionMissing: "Run was not registered — score not saved",
+    leaveConfirmRevive:
+      "Leave without saving this score? Your current run will be lost.",
+    leaveConfirmPlaying:
+      "Leave the game? Your current run will not be saved.",
+    restartConfirmRevive:
+      "Restart without saving? Your current score will be lost.",
     saveFailed: "Could not save score — check your connection",
+    savingScore: "Saving score…",
+    scoreJobNotFound: "Score save job not found",
     reviveEndTitle: "Run ended",
     reviveAdBanner: "Watch an ad — keep playing",
     watchAdContinue: "Continue",
@@ -168,6 +178,8 @@ export const ui = {
     adDismissed: "Ad closed — save your score or restart",
     reviveFailed: "Could not continue — save your score or restart",
     reviveHintNoAd: "Save your score or start a new run.",
+    paused: "Paused",
+    onboardingDismiss: "Got it",
     ariaLabel: (name: string) => `Game ${name}`,
   },
 } as const;

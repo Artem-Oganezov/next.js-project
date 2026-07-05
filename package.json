@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
+    "build:worker": "esbuild workers/score-worker.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/score-worker.cjs --packages=external --tsconfig=tsconfig.json",
     "start": "next start",
+    "worker:score": "tsx workers/score-worker.ts",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -39,9 +41,11 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.18",
+    "esbuild": "^0.25.0",
     "mongodb-memory-server": "^11.2.0",
     "prettier": "^3.5.3",
     "tailwindcss": "^4",
+    "tsx": "^4.19.4",
     "typescript": "^5",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^3.2.4"

@@ -15,6 +15,7 @@ ENV MONGODB_URI=mongodb://build-placeholder:27017/build \
     AUTH_SECRET=build-placeholder-secret-32-characters!! \
     REDIS_URL=redis://build-placeholder:6379
 RUN npm run build
+RUN npm run build:worker
 
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -24,6 +25,7 @@ RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/dist/score-worker.cjs ./score-worker.cjs
 
 USER nextjs
 EXPOSE 3000

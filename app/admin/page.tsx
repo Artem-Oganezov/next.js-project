@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { formatAntiCheatReason } from "@/lib/security/anti-cheat-labels";
 
 type Submission = {
   id: string;
@@ -186,7 +187,7 @@ export default function AdminPage() {
                 <td className="p-2">{entry.username}</td>
                 <td className="p-2">{entry.score}</td>
                 <td className="p-2 max-w-xs truncate" title={entry.reason}>
-                  {entry.reason}
+                  {formatAntiCheatReason(entry.reason)}
                 </td>
                 <td className="p-2">
                   <button

@@ -1,12 +1,20 @@
 import { z } from "zod";
 import { replayGame, TICKS_PER_SECOND } from "@/game/engine";
+import {
+  MAX_GAME_DURATION_MS,
+  MAX_SCORE_PER_SECOND,
+  MIN_GAME_DURATION_MS,
+  SCORE_GRACE,
+} from "@/game/score-config";
 import { gameMeta } from "@/game/meta";
 import {
   validateGameScore,
   type ScoreRulesConfig,
   type ScoreValidationResult,
+  type ValidateGameScoreOptions,
 } from "@/lib/game/score-rules";
 import type { ScoreOrder } from "@/lib/game/score-order";
+import { AntiCheatReason } from "@/lib/security/anti-cheat-reasons";
 
 export type InputParseResult =
   | { ok: true; input: unknown }
@@ -16,6 +24,10 @@ export type DinoInputLog = {
   jumpTicks: number[];
   reviveAtTick?: number;
 };
+
+export type ReplayValidationResult =
+  | { ok: true; ticks: number }
+  | { ok: false; code: string; message: string };
 
 /**
  * Единственная game-specific точка бэкенда.
@@ -37,6 +49,7 @@ export type GamePlugin = {
     score: number,
     gameStartedAt: Date | null | undefined,
     now?: Date,
+    options?: ValidateGameScoreOptions,
   ): ScoreValidationResult;
   /**
    * Точная replay-валидация: сервер прогоняет партию по seed и логу
@@ -47,7 +60,7 @@ export type GamePlugin = {
     seed: string,
     input: unknown,
     submittedScore: number,
-  ): ScoreValidationResult;
+  ): ReplayValidationResult;
 };
 
 const jumpTicksSchema = z
@@ -98,10 +111,10 @@ function parseDinoInputLog(raw: unknown): InputParseResult {
 }
 
 const scoreRules: ScoreRulesConfig = {
-  maxScorePerSecond: 18,
-  scoreGrace: 10,
-  maxGameDurationMs: 20 * 60 * 1000,
-  minGameDurationMs: 2000,
+  maxScorePerSecond: MAX_SCORE_PER_SECOND,
+  scoreGrace: SCORE_GRACE,
+  maxGameDurationMs: MAX_GAME_DURATION_MS,
+  minGameDurationMs: MIN_GAME_DURATION_MS,
 };
 
 const MAX_REPLAY_TICKS = (scoreRules.maxGameDurationMs / 1000) * TICKS_PER_SECOND;
@@ -114,20 +127,32 @@ export const gamePlugin: GamePlugin = {
   scoreRules,
   maxInputLogBytes: MAX_INPUT_LOG_BYTES,
   parseInputLog: parseDinoInputLog,
-  validateScore: (score, gameStartedAt, now) =>
-    validateGameScore(score, gameStartedAt, scoreRules, now),
+  validateScore: (score, gameStartedAt, now, options) =>
+    validateGameScore(score, gameStartedAt, scoreRules, now, options),
   validateReplay: (seed, input, submittedScore) => {
     const { jumpTicks, reviveAtTick } = input as DinoInputLog;
     const replay = replayGame(seed, jumpTicks, MAX_REPLAY_TICKS, reviveAtTick);
     if (!replay.ok) {
       if (replay.reason === "revive-mismatch") {
-        return { ok: false, message: "Revive tick does not match server replay" };
+        return {
+          ok: false,
+          code: AntiCheatReason.REPLAY_REVIVE_MISMATCH,
+          message: "Revive tick does not match server replay",
+        };
       }
-      return { ok: false, message: "Game failed server-side verification" };
+      return {
+        ok: false,
+        code: AntiCheatReason.REPLAY_FAILED,
+        message: "Game failed server-side verification",
+      };
     }
     if (replay.score !== submittedScore) {
-      return { ok: false, message: "Score does not match server replay" };
+      return {
+        ok: false,
+        code: AntiCheatReason.REPLAY_SCORE_MISMATCH,
+        message: "Score does not match server replay",
+      };
     }
-    return { ok: true };
+    return { ok: true, ticks: replay.ticks };
   },
 };

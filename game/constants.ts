@@ -1,3 +1,5 @@
+import { SCORE_PER_FRAME } from "@/game/score-config";
+
 /** Константы канваса и физики Dino Run. При смене игры заменяются целиком. */
 export const GAME_CONFIG = {
   CANVAS_WIDTH: 800,
@@ -11,7 +13,5 @@ export const GAME_CONFIG = {
   BASE_SPEED: 5,
   /** Invincibility after revive — must match server replay (ticks at 60/s). */
   REVIVE_INVINCIBILITY_TICKS: 90,
-  // Связано с maxScorePerSecond в lib/game/plugin.ts:
-  // 0.15 * 60fps ≈ 9 очков/сек при честной игре.
-  SCORE_PER_FRAME: 0.15,
+  SCORE_PER_FRAME,
 } as const;

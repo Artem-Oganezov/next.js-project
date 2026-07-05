@@ -2,6 +2,7 @@ import type { Types } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
 import { SuspiciousSubmit } from "@/lib/models/SuspiciousSubmit";
 import { incrementCounter } from "@/lib/observability/metrics";
+import { antiCheatMetricLabel } from "@/lib/security/anti-cheat-reasons";
 
 export type SuspiciousSubmitDetails = {
   userId: string | Types.ObjectId;
@@ -20,13 +21,9 @@ export async function recordSuspiciousSubmit(
 ): Promise<void> {
   console.warn(JSON.stringify({ level: "warn", scope: "anti-cheat", ...details }));
 
-  const reasonLabel = details.reason.startsWith("replay:")
-    ? "replay"
-    : details.reason.includes("высокий")
-      ? "score-ceiling"
-      : "other";
-
-  incrementCounter("anti_cheat_rejections_total", { reason: reasonLabel });
+  incrementCounter("anti_cheat_rejections_total", {
+    reason: antiCheatMetricLabel(details.reason),
+  });
 
   try {
     await connectDB();

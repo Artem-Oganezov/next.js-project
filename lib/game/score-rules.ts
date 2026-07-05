@@ -1,4 +1,9 @@
-export type ScoreValidationResult = { ok: true } | { ok: false; message: string };
+import { TICKS_PER_SECOND } from "@/game/engine";
+import { AntiCheatReason } from "@/lib/security/anti-cheat-reasons";
+
+export type ScoreValidationResult =
+  | { ok: true }
+  | { ok: false; code: string; message: string };
 
 export type ScoreRulesConfig = {
   maxScorePerSecond: number;
@@ -6,6 +11,15 @@ export type ScoreRulesConfig = {
   maxGameDurationMs: number;
   minGameDurationMs: number;
 };
+
+export type ValidateGameScoreOptions = {
+  /** When replay succeeded, min duration may pass via tick count instead of wall clock. */
+  replayTicks?: number;
+};
+
+export function minRunTicks(config: ScoreRulesConfig): number {
+  return Math.ceil((config.minGameDurationMs / 1000) * TICKS_PER_SECOND);
+}
 
 export function maxPlausibleScore(elapsedMs: number, config: ScoreRulesConfig): number {
   if (elapsedMs <= 0) {
@@ -21,23 +35,43 @@ export function validateGameScore(
   gameStartedAt: Date | null | undefined,
   config: ScoreRulesConfig,
   now: Date = new Date(),
+  options?: ValidateGameScoreOptions,
 ): ScoreValidationResult {
   if (!gameStartedAt) {
-    return { ok: false, message: "Start a game session first" };
+    return {
+      ok: false,
+      code: AntiCheatReason.UNKNOWN_SESSION,
+      message: "Start a game session first",
+    };
   }
 
   const elapsedMs = now.getTime() - gameStartedAt.getTime();
 
   if (elapsedMs > config.maxGameDurationMs) {
-    return { ok: false, message: "Game session expired, start a new run" };
+    return {
+      ok: false,
+      code: AntiCheatReason.SESSION_EXPIRED,
+      message: "Game session expired, start a new run",
+    };
   }
 
   if (submittedScore > maxPlausibleScore(elapsedMs, config)) {
-    return { ok: false, message: "Score too high for this run" };
+    return {
+      ok: false,
+      code: AntiCheatReason.SCORE_CEILING,
+      message: "Score too high for this run",
+    };
   }
 
-  if (elapsedMs < config.minGameDurationMs) {
-    return { ok: false, message: "Run too short" };
+  const minTicks = minRunTicks(config);
+  const ticksOk =
+    options?.replayTicks !== undefined && options.replayTicks >= minTicks;
+  if (elapsedMs < config.minGameDurationMs && !ticksOk) {
+    return {
+      ok: false,
+      code: AntiCheatReason.RUN_TOO_SHORT,
+      message: "Run too short",
+    };
   }
 
   return { ok: true };

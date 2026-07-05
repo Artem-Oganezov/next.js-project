@@ -33,6 +33,11 @@ export type RedisClient = {
   zcountAbove(key: string, score: number): Promise<number>;
   /** Первый member со score строго больше указанного (ближайший сверху). */
   zfirstAbove(key: string, score: number): Promise<string | null>;
+  /** SET key value NX EX — returns true when the key was created. */
+  setNx(key: string, value: string, exSeconds: number): Promise<boolean>;
+  lpush(key: string, value: string): Promise<void>;
+  /** Blocking right pop; null when timeout expires without a value. */
+  brpop(key: string, timeoutSeconds: number): Promise<string | null>;
 };
 
 function createIoRedisClient(url: string): RedisClient {
@@ -97,6 +102,18 @@ function createIoRedisClient(url: string): RedisClient {
       );
       return members[0] ?? null;
     },
+    async setNx(key, value, exSeconds) {
+      const result = await client.set(key, value, "EX", exSeconds, "NX");
+      return result === "OK";
+    },
+    async lpush(key, value) {
+      await client.lpush(key, value);
+    },
+    async brpop(key, timeoutSeconds) {
+      const result = await client.brpop(key, timeoutSeconds);
+      if (!result) return null;
+      return result[1] ?? null;
+    },
   };
 }
 
@@ -153,6 +170,22 @@ function createUpstashClient(url: string, token: string): RedisClient {
         count: 1,
       });
       return members[0] ?? null;
+    },
+    async setNx(key, value, exSeconds) {
+      const result = await client.set(key, value, { nx: true, ex: exSeconds });
+      return result === "OK";
+    },
+    async lpush(key, value) {
+      await client.lpush(key, value);
+    },
+    async brpop(key, timeoutSeconds) {
+      const deadline = Date.now() + timeoutSeconds * 1000;
+      while (Date.now() < deadline) {
+        const value = await client.rpop<string>(key);
+        if (value) return value;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+      return null;
     },
   };
 }
