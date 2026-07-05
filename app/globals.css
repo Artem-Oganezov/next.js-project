@@ -786,15 +786,77 @@ body {
   line-height: 1.45;
 }
 
-.revive-once-badge {
-  font-size: 12px;
+.revive-modal {
+  gap: 16px;
+}
+
+.revive-ad-banner {
+  width: min(300px, 100%);
+  background: linear-gradient(180deg, #fff9e6 0%, #fff3cc 100%);
+  border: 2px solid #ffe08a;
+  border-radius: 20px;
+  padding: 14px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.revive-ad-banner-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #5c4a00;
+  line-height: 1.35;
+}
+
+.revive-countdown {
+  font-family: var(--font-display);
+  font-size: 42px;
   font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--violet-dark);
-  background: var(--pink-bg);
-  border-radius: 999px;
-  padding: 6px 12px;
+  line-height: 1;
+  color: var(--coral-dark);
+}
+
+.revive-continue-btn {
+  width: min(300px, 100%);
+  min-height: 52px;
+  font-size: 17px;
+}
+
+.revive-secondary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: min(300px, 100%);
+}
+
+.revive-secondary-row:has(> :only-child) {
+  grid-template-columns: 1fr;
+}
+
+.revive-secondary-btn {
+  min-height: 48px;
+  font-size: 14px;
+  padding: 12px 10px;
+}
+
+.revive-save-link {
+  margin-top: 4px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--violet);
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.revive-save-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .revive-ad-slot:empty {

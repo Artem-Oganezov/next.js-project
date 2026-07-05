@@ -22,6 +22,8 @@ const { CANVAS_WIDTH, CANVAS_HEIGHT, GROUND_Y, DINO_X, DINO_WIDTH, DINO_HEIGHT }
 const TICK_MS = 1000 / TICKS_PER_SECOND;
 const MAX_FRAME_DELTA_MS = 100;
 const REVIVE_AD_ENABLED = isReviveAdEnabled();
+/** Countdown on the revive banner (visual urgency). */
+const REVIVE_OFFER_COUNTDOWN_SEC = 15;
 
 export default function Game({
   username,
@@ -47,6 +49,11 @@ export default function Game({
     nextUsername: string | null;
   } | null>(null);
   const [jumpHint, setJumpHint] = useState<string>(ui.game.spaceJump);
+  const [reviveRank, setReviveRank] = useState<{
+    rank: number;
+    nextUsername: string | null;
+  } | null>(null);
+  const [reviveCountdown, setReviveCountdown] = useState(REVIVE_OFFER_COUNTDOWN_SEC);
   const onScoreSavedRef = useRef(onScoreSaved);
   const activeSkinColorRef = useRef(activeSkinColor);
 
@@ -82,6 +89,23 @@ export default function Game({
   }, [reviveOffer, gameOver]);
 
   useEffect(() => {
+    if (!reviveOffer) {
+      setReviveRank(null);
+      setReviveCountdown(REVIVE_OFFER_COUNTDOWN_SEC);
+      return;
+    }
+
+    setReviveCountdown(REVIVE_OFFER_COUNTDOWN_SEC);
+    void api.getLeaderboardRank().then(setReviveRank).catch(() => setReviveRank(null));
+
+    const timerId = window.setInterval(() => {
+      setReviveCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [reviveOffer]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -101,6 +125,7 @@ export default function Game({
     let hasRevived = false;
     let reviveAtTick: number | null = null;
     let adPending = false;
+    let scoreSubmitStarted = false;
 
     /** Visual-only offset between fixed simulation ticks (does not affect engine/replay). */
     const renderAlpha = (): number => {
@@ -142,6 +167,7 @@ export default function Game({
       pausedForReviveOffer = false;
       hasRevived = false;
       reviveAtTick = null;
+      scoreSubmitStarted = false;
       setScore(0);
       setReviveOffer(false);
       setAdLoading(false);
@@ -173,12 +199,17 @@ export default function Game({
         });
     };
 
-    const saveScoreFromReviveOffer = () => {
-      if (!engine) return;
+    const beginFinalScoreSubmit = () => {
+      if (!engine || scoreSubmitStarted) return;
+      scoreSubmitStarted = true;
       pausedForReviveOffer = false;
       setReviveOffer(false);
       setGameOver(true);
       submitScore(engine.getScore(), buildInputLog());
+    };
+
+    const saveScoreFromReviveOffer = () => {
+      beginFinalScoreSubmit();
     };
 
     saveScoreRef.current = saveScoreFromReviveOffer;
@@ -234,8 +265,7 @@ export default function Game({
         if (pausedForReviveOffer) {
           return;
         }
-        setGameOver(true);
-        submitScore(engine.getScore(), buildInputLog());
+        beginFinalScoreSubmit();
         return;
       }
 
@@ -371,19 +401,30 @@ export default function Game({
       )}
 
       {reviveOffer && (
-        <div className="dead-overlay" data-testid="revive-offer-modal">
-          <div className="dead-title">
-            {REVIVE_AD_ENABLED ? ui.game.reviveTitle : ui.game.reviveEndTitle}
-          </div>
+        <div className="dead-overlay revive-modal" data-testid="revive-offer-modal">
+          <div className="dead-title">{ui.game.crashTitle}</div>
           <div className="dead-score">
             {ui.game.score}: {score}
           </div>
-          {REVIVE_AD_ENABLED && (
-            <span className="revive-once-badge">{ui.game.reviveOnceBadge}</span>
+
+          {reviveRank && (
+            <div className="dead-rank">
+              {ui.game.rankLine(reviveRank.rank, reviveRank.nextUsername)}
+            </div>
           )}
-          <p className="game-sub revive-hint">
-            {REVIVE_AD_ENABLED ? ui.game.reviveHint : ui.game.reviveHintNoAd}
-          </p>
+
+          {REVIVE_AD_ENABLED && (
+            <div className="revive-ad-banner">
+              <p className="revive-ad-banner-text">{ui.game.reviveAdBanner}</p>
+              <div className="revive-countdown" aria-live="polite">
+                {reviveCountdown}
+              </div>
+            </div>
+          )}
+
+          {!REVIVE_AD_ENABLED && (
+            <p className="game-sub revive-hint">{ui.game.reviveHintNoAd}</p>
+          )}
 
           <div
             ref={adSlotRef}
@@ -398,36 +439,80 @@ export default function Game({
             </p>
           )}
 
-          <div className="btn-row">
-            {REVIVE_AD_ENABLED && (
+          {REVIVE_AD_ENABLED ? (
+            <>
               <button
                 type="button"
                 data-testid="revive-watch-ad-btn"
                 onClick={() => watchAdRef.current?.()}
+                className="pbtn pbtn-primary revive-continue-btn"
+                disabled={adLoading}
+              >
+                {adLoading ? ui.game.adLoading : `▶ ${ui.game.watchAdContinue}`}
+              </button>
+
+              <div className="revive-secondary-row">
+                <button
+                  type="button"
+                  onClick={() => resetGameRef.current?.()}
+                  className="pbtn pbtn-secondary revive-secondary-btn"
+                  disabled={adLoading}
+                >
+                  ↻ {ui.game.restartRun}
+                </button>
+                {onOpenLeaderboard && (
+                  <button
+                    type="button"
+                    onClick={onOpenLeaderboard}
+                    className="pbtn pbtn-secondary revive-secondary-btn"
+                    disabled={adLoading}
+                  >
+                    🏆 {ui.game.toLeaderboard}
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                data-testid="revive-save-score-btn"
+                onClick={() => saveScoreRef.current?.()}
+                className="revive-save-link"
+                disabled={adLoading}
+              >
+                {ui.game.saveScoreLink}
+              </button>
+            </>
+          ) : (
+            <div className="btn-row">
+              <button
+                type="button"
+                data-testid="revive-save-score-btn"
+                onClick={() => saveScoreRef.current?.()}
                 className="pbtn pbtn-primary"
                 disabled={adLoading}
               >
-                {adLoading ? ui.game.adLoading : ui.game.watchAdContinue}
+                {ui.game.saveScore}
               </button>
-            )}
-            <button
-              type="button"
-              data-testid="revive-save-score-btn"
-              onClick={() => saveScoreRef.current?.()}
-              className="pbtn pbtn-secondary"
-              disabled={adLoading}
-            >
-              {ui.game.saveScore}
-            </button>
-            <button
-              type="button"
-              onClick={() => resetGameRef.current?.()}
-              className="pbtn pbtn-secondary"
-              disabled={adLoading}
-            >
-              {ui.game.playAgain}
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => resetGameRef.current?.()}
+                className="pbtn pbtn-secondary"
+                disabled={adLoading}
+              >
+                ↻ {ui.game.restartRun}
+              </button>
+              {onOpenLeaderboard && (
+                <button
+                  type="button"
+                  onClick={onOpenLeaderboard}
+                  className="pbtn pbtn-secondary"
+                  disabled={adLoading}
+                >
+                  🏆 {ui.game.toLeaderboard}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
