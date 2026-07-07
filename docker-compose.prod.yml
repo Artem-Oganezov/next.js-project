@@ -6,8 +6,8 @@
 #   nano .env
 #   docker compose -f docker-compose.prod.yml up -d --build
 #
-# Scale workers on traffic spikes:
-#   docker compose -f docker-compose.prod.yml up -d --scale worker=2
+# Scale worker replicas when the score queue backs up (example):
+#   docker compose -f docker-compose.prod.yml up -d --scale worker=<n>
 #
 # Second VPS (optional): run only `app` from the same image + .env and add the
 # host to nginx upstream (see nginx.example.conf) or use a host-level LB.

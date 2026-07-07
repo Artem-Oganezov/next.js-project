@@ -23,10 +23,10 @@ curl -s http://127.0.0.1/api/health
 
 Nginx listens on port **80** and balances between `app-a` and `app-b`. Put **Cloudflare** or **Caddy** in front for HTTPS.
 
-Scale workers on spikes:
+Scale worker replicas when the score queue backs up:
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --scale worker=2
+docker compose -f docker-compose.prod.yml up -d --scale worker=<n>
 ```
 
 See `.env.production.example` for all variables (`TRUST_PROXY`, `SCORE_ASYNC`, `ADMIN_SECRET`, etc.).
@@ -124,10 +124,10 @@ When `SCORE_ASYNC=true` in `.env`:
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-The worker runs `node score-worker.cjs` (bundled at image build). Scale workers:
+The worker runs `node score-worker.cjs` (bundled at image build). Scale replicas as queue depth grows:
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --scale worker=2
+docker compose -f docker-compose.prod.yml up -d --scale worker=<n>
 ```
 
 Requires **TCP** `REDIS_URL` (shared managed Redis). See [INFLUENCER-LAUNCH.md](INFLUENCER-LAUNCH.md).
