@@ -7,7 +7,10 @@ import {
 import { processScoreSubmission } from "@/lib/game/process-score";
 
 export async function runScoreJob(payload: ScoreJobPayload): Promise<void> {
-  await updateScoreJob(payload.jobId, { status: "processing" });
+  await updateScoreJob(payload.jobId, {
+    status: "processing",
+    processingStartedAt: new Date().toISOString(),
+  });
 
   const outcome = await processScoreSubmission({
     userId: payload.userId,
@@ -42,24 +45,35 @@ export async function drainScoreQueueOnce(): Promise<boolean> {
 
 export async function runScoreWorkerLoop(signal?: AbortSignal): Promise<void> {
   while (!signal?.aborted) {
-    const payload = await popScoreJobPayload(5);
-    if (!payload) continue;
     try {
-      await runScoreJob(payload);
+      const payload = await popScoreJobPayload(5);
+      if (!payload) continue;
+      try {
+        await runScoreJob(payload);
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            level: "error",
+            scope: "score-worker",
+            jobId: payload.jobId,
+            message: error instanceof Error ? error.message : "Unknown error",
+          }),
+        );
+        await updateScoreJob(payload.jobId, {
+          status: "failed",
+          message: "Score processing failed",
+        });
+        await releaseScoreSessionLock(payload.sessionId);
+      }
     } catch (error) {
       console.error(
         JSON.stringify({
           level: "error",
           scope: "score-worker",
-          jobId: payload.jobId,
-          message: error instanceof Error ? error.message : "Unknown error",
+          message: error instanceof Error ? error.message : "Queue read failed",
         }),
       );
-      await updateScoreJob(payload.jobId, {
-        status: "failed",
-        message: "Score processing failed",
-      });
-      await releaseScoreSessionLock(payload.sessionId);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 }

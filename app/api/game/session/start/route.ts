@@ -1,16 +1,12 @@
-import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
-import { tooManyRequests, unauthorized } from "@/lib/api/errors";
+import { forbidden, tooManyRequests, unauthorized } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { getSessionUser } from "@/lib/auth/session";
 import { RATE_LIMIT } from "@/lib/config/app";
-import { connectDB } from "@/lib/db/mongoose";
-import { gamePlugin } from "@/lib/game/plugin";
-import { GameSession } from "@/lib/models/GameSession";
+import { assertCanPlay } from "@/lib/game/play-guard";
+import { startGameSessionForUser } from "@/lib/game/start-game-session";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { msg } from "@/lib/i18n/messages";
-
-const SESSION_EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 
 export const POST = withApiHandler(
   "game/session/start",
@@ -20,7 +16,11 @@ export const POST = withApiHandler(
       return unauthorized();
     }
 
-    // Rate limit by userId too: IP limits do not stop a single logged-in bot.
+    const playGuard = assertCanPlay(sessionUser);
+    if (!playGuard.ok) {
+      return forbidden(playGuard.message);
+    }
+
     const userLimit = await enforceRateLimit(
       `game:session:user:${sessionUser.id}`,
       RATE_LIMIT.SCORE_MAX_REQUESTS,
@@ -30,30 +30,12 @@ export const POST = withApiHandler(
       return tooManyRequests(msg.game.tooManyRequests);
     }
 
-    await connectDB();
-
-    // One active run per user: older unsubmitted sessions are invalidated.
-    await GameSession.deleteMany({
-      userId: sessionUser.id,
-      scoreSubmitted: false,
-    });
-
-    const startedAt = new Date();
-    const gameSession = await GameSession.create({
-      userId: sessionUser.id,
-      seed: randomBytes(16).toString("hex"),
-      startedAt,
-      expiresAt: new Date(
-        startedAt.getTime() +
-          gamePlugin.scoreRules.maxGameDurationMs +
-          SESSION_EXPIRY_BUFFER_MS,
-      ),
-    });
+    const gameSession = await startGameSessionForUser(sessionUser.id);
 
     return NextResponse.json({
-      sessionId: gameSession._id.toString(),
+      sessionId: gameSession.sessionId,
       seed: gameSession.seed,
-      startedAt: startedAt.toISOString(),
+      startedAt: gameSession.startedAt.toISOString(),
     });
   },
   {

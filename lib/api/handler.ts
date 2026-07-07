@@ -27,6 +27,7 @@ export function withApiHandler(
       if (rateLimit) {
         const ip = getClientIp(request);
         const key = `${rateLimit.keyPrefix}:${ip}`;
+
         const result = await enforceRateLimit(
           key,
           rateLimit.maxRequests,

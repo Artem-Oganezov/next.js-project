@@ -11,6 +11,7 @@ Use this after local dev works and before pointing a real domain at the game.
 - [ ] `ADMIN_SECRET` — ≥32 chars for `/admin` and protected metrics
 - [ ] HTTPS in front of the app (nginx/Caddy + certbot)
 - [ ] `TRUST_PROXY=true` when behind nginx so IP rate limits use the real client IP
+- [ ] `REQUIRE_EMAIL_VERIFICATION=true` — block play until email verified (recommended for launch)
 - [ ] nginx overwrites `X-Forwarded-For` (see `nginx.example.conf`)
 
 ## Email (account recovery + verification)

@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { unauthorized } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { getSessionUser } from "@/lib/auth/session";
+import { connectDB } from "@/lib/db/mongoose";
 import { computeRank } from "@/lib/game/rank";
+import { LEADERBOARD_ELIGIBLE_FILTER } from "@/lib/game/leaderboard-eligibility";
+import { User } from "@/lib/models/User";
 
 export const GET = withApiHandler("leaderboard/rank", async () => {
   const sessionUser = await getSessionUser();
@@ -10,10 +13,20 @@ export const GET = withApiHandler("leaderboard/rank", async () => {
     return unauthorized();
   }
 
-  const { rank, nextUsername } = await computeRank(
-    sessionUser.username,
-    sessionUser.bestScore,
-  );
+  await connectDB();
+
+  const user = await User.findOne({
+    _id: sessionUser.id,
+    ...LEADERBOARD_ELIGIBLE_FILTER,
+  })
+    .select("username bestScore")
+    .lean();
+
+  if (!user) {
+    return unauthorized();
+  }
+
+  const { rank, nextUsername } = await computeRank(user.username, user.bestScore);
 
   return NextResponse.json({ rank, nextUsername });
 });

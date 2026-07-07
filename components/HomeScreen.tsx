@@ -82,6 +82,7 @@ export default function HomeScreen({
         await equipMutation.mutateAsync(skinId);
       } else {
         await unlockMutation.mutateAsync(skinId);
+        await equipMutation.mutateAsync(skinId);
       }
     } catch (err) {
       setSkinError(getApiErrorMessage(err, ui.common.error));

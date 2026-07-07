@@ -6,6 +6,7 @@ import { resetEnvCache } from "@/lib/env";
 import { resetMetrics } from "@/lib/observability/metrics";
 import { resetRedisCache } from "@/lib/redis";
 import { resetRateLimitState } from "@/lib/security/rate-limit";
+import { resetClientIpState } from "@/lib/api/http";
 
 const cookieJar = new Map<string, string>();
 
@@ -77,6 +78,7 @@ afterEach(async () => {
   resetEnvCache();
   resetRedisCache();
   resetRateLimitState();
+  resetClientIpState();
   resetMetrics();
 
   if (global.mongooseCache) {

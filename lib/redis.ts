@@ -28,6 +28,7 @@ export type RedisClient = {
   expire(key: string, seconds: number): Promise<void>;
   ttl(key: string): Promise<number>;
   zadd(key: string, entries: { score: number; member: string }[]): Promise<void>;
+  zrem(key: string, members: string[]): Promise<void>;
   zcard(key: string): Promise<number>;
   /** How many members have a score strictly greater than the given value. */
   zcountAbove(key: string, score: number): Promise<number>;
@@ -84,6 +85,10 @@ function createIoRedisClient(url: string): RedisClient {
       if (entries.length === 0) return;
       const args = entries.flatMap((e) => [e.score, e.member]);
       await client.zadd(key, ...args);
+    },
+    async zrem(key, members) {
+      if (members.length === 0) return;
+      await client.zrem(key, ...members);
     },
     async zcard(key) {
       return client.zcard(key);
@@ -157,6 +162,10 @@ function createUpstashClient(url: string, token: string): RedisClient {
       const [first, ...rest] = entries;
       await client.zadd(key, first, ...rest);
     },
+    async zrem(key, members) {
+      if (members.length === 0) return;
+      await client.zrem(key, ...members);
+    },
     async zcard(key) {
       return client.zcard(key);
     },
@@ -191,6 +200,7 @@ function createUpstashClient(url: string, token: string): RedisClient {
 }
 
 let cachedClient: RedisClient | null = null;
+let warmPromise: Promise<void> | null = null;
 
 export function getRedis(): RedisClient {
   if (cachedClient) {
@@ -214,7 +224,19 @@ export function getRedis(): RedisClient {
   return cachedClient;
 }
 
+/** Eager TCP/REST handshake so the first API request does not pay connect latency. */
+export function warmRedis(): Promise<void> {
+  if (!warmPromise) {
+    warmPromise = getRedis()
+      .ping()
+      .catch(() => {})
+      .then(() => undefined);
+  }
+  return warmPromise;
+}
+
 /** Reset singleton client (tests, REDIS_URL change). */
 export function resetRedisCache(): void {
   cachedClient = null;
+  warmPromise = null;
 }

@@ -7,6 +7,7 @@ import {
 } from "@/lib/cache/leaderboard";
 import { connectDB } from "@/lib/db/mongoose";
 import { gamePlugin } from "@/lib/game/plugin";
+import { LEADERBOARD_ELIGIBLE_FILTER } from "@/lib/game/leaderboard-eligibility";
 import { leaderboardSortDirection } from "@/lib/game/score-order";
 import { User } from "@/lib/models/User";
 
@@ -18,7 +19,7 @@ export const GET = withApiHandler("leaderboard", async () => {
 
   await connectDB();
 
-  const leaderboard = (await User.find({})
+  const leaderboard = (await User.find(LEADERBOARD_ELIGIBLE_FILTER)
     .sort({ bestScore: leaderboardSortDirection(gamePlugin.scoreOrder) })
     .limit(10)
     .select("username bestScore activeSkin -_id")

@@ -1,3 +1,4 @@
+import { LEADERBOARD_ELIGIBLE_FILTER } from "@/lib/game/leaderboard-eligibility";
 import {
   bulkSeedLeaderboard,
   leaderboardSize,
@@ -24,7 +25,10 @@ async function seedLeaderboardFromMongo(order: ScoreOrder): Promise<void> {
 
   let batch: { username: string; bestScore: number }[] = [];
 
-  const cursor = User.find({}).select("username bestScore -_id").lean().cursor();
+  const cursor = User.find(LEADERBOARD_ELIGIBLE_FILTER)
+    .select("username bestScore -_id")
+    .lean()
+    .cursor();
 
   for await (const doc of cursor) {
     batch.push({ username: doc.username, bestScore: doc.bestScore });
@@ -42,11 +46,12 @@ async function seedLeaderboardFromMongo(order: ScoreOrder): Promise<void> {
 async function rankFromMongo(bestScore: number, order: ScoreOrder): Promise<RankResult> {
   await connectDB();
 
-  const higherCount = await User.countDocuments(mongoBetterThanFilter(bestScore, order));
+  const eligibleFilter = { ...mongoBetterThanFilter(bestScore, order), ...LEADERBOARD_ELIGIBLE_FILTER };
+  const higherCount = await User.countDocuments(eligibleFilter);
 
   let nextUsername: string | null = null;
   if (higherCount > 0) {
-    const nextUser = await User.findOne(mongoBetterThanFilter(bestScore, order))
+    const nextUser = await User.findOne(eligibleFilter)
       .sort(mongoNextSort(order))
       .select("username -_id")
       .lean();

@@ -9,7 +9,7 @@ import { SKINS, gameMeta } from "@/game";
 import { api } from "@/lib/client/api";
 import {
   getApiErrorMessage,
-  useLeaderboardQuery,
+  useRankQuery,
   useSkinMutations,
 } from "@/lib/client/hooks";
 import {
@@ -57,16 +57,30 @@ export default function ProfileScreen({
   const safeActiveSkin = activeSkinProp ?? "default";
 
   const {
-    data: leaderboard = [],
-    isLoading: leaderboardLoading,
-    isError: leaderboardError,
-  } = useLeaderboardQuery();
-
-  const rankIndex = leaderboard.findIndex((entry) => entry.username === username);
-  const rank = rankIndex >= 0 ? rankIndex + 1 : null;
+    data: rankData,
+    isLoading: rankLoading,
+    isError: rankError,
+  } = useRankQuery();
 
   const { equipMutation, unlockMutation } = useSkinMutations(onUserUpdate);
   const skinBusy = equipMutation.isPending || unlockMutation.isPending;
+
+  async function handleSkinClick(skinId: string) {
+    const isUnlocked = safeUnlockedSkins.includes(skinId);
+    if (isUnlocked && skinId === safeActiveSkin) return;
+
+    setSkinError(null);
+    try {
+      if (isUnlocked) {
+        await equipMutation.mutateAsync(skinId);
+      } else {
+        await unlockMutation.mutateAsync(skinId);
+        await equipMutation.mutateAsync(skinId);
+      }
+    } catch (err) {
+      setSkinError(getApiErrorMessage(err, ui.common.error));
+    }
+  }
 
   const passwordForm = useForm<ChangePasswordInput>({
     resolver: zodResolver(changePasswordSchema),
@@ -125,22 +139,6 @@ export default function ProfileScreen({
     changePasswordMutation.isPending ||
     deleteAccountMutation.isPending;
 
-  async function handleSkinClick(skinId: string) {
-    const isUnlocked = safeUnlockedSkins.includes(skinId);
-    if (isUnlocked && skinId === safeActiveSkin) return;
-
-    setSkinError(null);
-    try {
-      if (isUnlocked) {
-        await equipMutation.mutateAsync(skinId);
-      } else {
-        await unlockMutation.mutateAsync(skinId);
-      }
-    } catch (err) {
-      setSkinError(getApiErrorMessage(err, ui.common.error));
-    }
-  }
-
   return (
     <div className="screen-content">
       <div className="page-header">
@@ -171,11 +169,11 @@ export default function ProfileScreen({
         <div className="profile-stat">
           <span>{ui.profile.rank}</span>
           <b>
-            {leaderboardLoading && "…"}
-            {leaderboardError && "—"}
-            {!leaderboardLoading &&
-              !leaderboardError &&
-              (rank !== null ? `#${rank}` : ui.profile.rankOutsideTop)}
+            {rankLoading && "…"}
+            {rankError && "—"}
+            {!rankLoading &&
+              !rankError &&
+              (rankData ? `#${rankData.rank}` : "—")}
           </b>
         </div>
       </div>

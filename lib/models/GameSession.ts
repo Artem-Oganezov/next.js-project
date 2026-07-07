@@ -43,6 +43,7 @@ const gameSessionSchema = new Schema<IGameSession>({
 });
 
 gameSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+gameSessionSchema.index({ userId: 1, scoreSubmitted: 1 });
 
 export const GameSession: Model<IGameSession> =
   mongoose.models.GameSession ??

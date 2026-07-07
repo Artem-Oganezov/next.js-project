@@ -12,8 +12,3 @@ export const scoreBodySchema = z.object({
 });
 
 export type ScoreBodyInput = z.infer<typeof scoreBodySchema>;
-
-/** @deprecated Use scoreBodySchema */
-export const scoreSchema = scoreBodySchema;
-
-export type ScoreInput = ScoreBodyInput;

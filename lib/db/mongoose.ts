@@ -27,7 +27,10 @@ export async function connectDB(): Promise<typeof mongoose> {
   const { MONGODB_URI } = getEnv();
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI);
+    const { MONGODB_MAX_POOL_SIZE } = getEnv();
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      maxPoolSize: MONGODB_MAX_POOL_SIZE,
+    });
   }
 
   try {

@@ -1,11 +1,19 @@
 import { getEnv } from "@/lib/env";
 
+let trustProxyWarningLogged = false;
+
+/** Reset logging flag (tests). */
+export function resetClientIpState(): void {
+  trustProxyWarningLogged = false;
+}
+
 export function getClientIp(request: Request | undefined): string {
   if (!request) {
     return "unknown";
   }
 
-  const { TRUST_PROXY } = getEnv();
+  const env = getEnv();
+  const { TRUST_PROXY, NODE_ENV } = env;
 
   if (TRUST_PROXY) {
     const forwarded = request.headers.get("x-forwarded-for");
@@ -17,6 +25,16 @@ export function getClientIp(request: Request | undefined): string {
     if (realIp) {
       return realIp;
     }
+  } else if (NODE_ENV === "production" && !trustProxyWarningLogged) {
+    trustProxyWarningLogged = true;
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        scope: "http",
+        message:
+          "TRUST_PROXY is false in production — rate limits share one bucket (unknown IP). Set TRUST_PROXY=true behind a reverse proxy.",
+      }),
+    );
   }
 
   return "unknown";

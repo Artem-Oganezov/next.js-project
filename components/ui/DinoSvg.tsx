@@ -1,3 +1,5 @@
+import { darkenColor } from "@/game/theme";
+
 type DinoSvgProps = {
   color?: string;
   size?: number;
@@ -9,6 +11,8 @@ export default function DinoSvg({
   size = 56,
   className,
 }: DinoSvgProps) {
+  const legColor = darkenColor(color);
+
   return (
     <svg
       viewBox="0 0 56 56"
@@ -22,8 +26,8 @@ export default function DinoSvg({
       <rect x="30" y="2" width="16" height="16" rx="8" fill={color} />
       <circle cx="40" cy="9" r="2.2" fill="#3b2b4a" />
       <rect x="6" y="22" width="14" height="10" rx="6" fill={color} />
-      <rect x="18" y="38" width="9" height="14" rx="4" fill="var(--coral-dark)" />
-      <rect x="32" y="38" width="9" height="14" rx="4" fill="var(--coral-dark)" />
+      <rect x="18" y="38" width="9" height="14" rx="4" fill={legColor} />
+      <rect x="32" y="38" width="9" height="14" rx="4" fill={legColor} />
       <path
         d="M40 18 q8 -2 6 8"
         stroke={color}

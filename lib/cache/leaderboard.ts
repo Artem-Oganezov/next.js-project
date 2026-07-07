@@ -3,6 +3,7 @@ import { toLeaderboardKey } from "@/lib/game/score-order";
 import { getRedis } from "@/lib/redis";
 
 const TOP10_KEY = "lb:top10";
+const TOP10_GEN_KEY = "lb:top10:gen";
 const TOP10_TTL_SEC = 60;
 const SCORES_KEY = "lb:scores";
 
@@ -12,11 +13,44 @@ export type LeaderboardEntry = {
   activeSkin: string;
 };
 
+type CachedTop10Payload = {
+  gen: number;
+  entries: LeaderboardEntry[];
+};
+
+async function getLeaderboardCacheGeneration(): Promise<number> {
+  const raw = await getRedis().get(TOP10_GEN_KEY);
+  return raw ? Number(raw) : 0;
+}
+
+/** Bump generation so stale top-10 payloads on any node are ignored. */
+export async function bumpLeaderboardCacheGeneration(): Promise<void> {
+  try {
+    await getRedis().incr(TOP10_GEN_KEY);
+    await getRedis().del(TOP10_KEY);
+  } catch {
+    // Mongo remains authoritative; cache simply misses until repopulated.
+  }
+}
+
 /** Top-10 cache: null — miss or Redis unavailable (fall back to Mongo). */
 export async function getCachedTop10(): Promise<LeaderboardEntry[] | null> {
   try {
-    const raw = await getRedis().get(TOP10_KEY);
-    return raw ? (JSON.parse(raw) as LeaderboardEntry[]) : null;
+    const redis = getRedis();
+    const [currentGen, raw] = await Promise.all([
+      getLeaderboardCacheGeneration(),
+      redis.get(TOP10_KEY),
+    ]);
+    if (!raw) {
+      return null;
+    }
+
+    const payload = JSON.parse(raw) as CachedTop10Payload;
+    if (payload.gen !== currentGen) {
+      return null;
+    }
+
+    return payload.entries;
   } catch {
     return null;
   }
@@ -24,17 +58,25 @@ export async function getCachedTop10(): Promise<LeaderboardEntry[] | null> {
 
 export async function setCachedTop10(entries: LeaderboardEntry[]): Promise<void> {
   try {
-    await getRedis().setEx(TOP10_KEY, JSON.stringify(entries), TOP10_TTL_SEC);
+    const gen = await getLeaderboardCacheGeneration();
+    const payload: CachedTop10Payload = { gen, entries };
+    await getRedis().setEx(TOP10_KEY, JSON.stringify(payload), TOP10_TTL_SEC);
   } catch {
     // Redis unavailable — cache simply does not work; response is still valid from Mongo
   }
 }
 
 export async function invalidateTop10(): Promise<void> {
+  await bumpLeaderboardCacheGeneration();
+}
+
+/** Remove a user from the rank ZSET (ban, account deletion). */
+export async function removeLeaderboardEntry(username: string): Promise<void> {
   try {
-    await getRedis().del(TOP10_KEY);
+    await getRedis().zrem(SCORES_KEY, [username]);
+    await invalidateTop10();
   } catch {
-    // expires via TTL
+    // Mongo remains authoritative; ZSET self-heals on next seed
   }
 }
 

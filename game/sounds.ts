@@ -27,7 +27,7 @@ function tone(
 
 export function createGameSounds(): GameSounds {
   let ctx: AudioContext | null = null;
-  let muted = false;
+  const muted = false;
 
   const ensure = (): AudioContext | null => {
     if (muted) return null;

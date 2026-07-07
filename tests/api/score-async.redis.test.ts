@@ -122,4 +122,55 @@ describeRedis("Async score API", () => {
     expect(body.bestScore).toBeGreaterThanOrEqual(run.score);
     expect(body.rank).toBeGreaterThan(0);
   });
+
+  it("fails stale processing jobs on status read", async () => {
+    await login();
+
+    const meResponse = await (
+      await import("@/app/api/auth/me/route")
+    ).GET(new Request("http://localhost/api/auth/me"));
+    const { user } = (await meResponse.json()) as { user: { id: string } };
+
+    const sessionResponse = await sessionStartPost(
+      jsonRequest("http://localhost/api/game/session/start", "POST", {}),
+    );
+    const { sessionId } = (await sessionResponse.json()) as { sessionId: string };
+
+    const submitResponse = await scorePost(
+      jsonRequest("http://localhost/api/game/score", "POST", {
+        sessionId,
+        score: 1,
+        inputLog: [],
+      }),
+    );
+    expect(submitResponse.status).toBe(202);
+    const { jobId } = (await submitResponse.json()) as { jobId: string };
+
+    const { getRedis } = await import("@/lib/redis");
+    const redis = getRedis();
+    const staleStartedAt = new Date(Date.now() - 6 * 60 * 1000).toISOString();
+    await redis.setEx(
+      `score:job:${jobId}`,
+      JSON.stringify({
+        status: "processing",
+        userId: user.id,
+        sessionId,
+        processingStartedAt: staleStartedAt,
+      }),
+      86_400,
+    );
+
+    const staleStatus = await scoreStatusGet(
+      jsonRequest(`http://localhost/api/game/score/status/${jobId}`, "GET"),
+      { params: Promise.resolve({ jobId }) },
+    );
+    const { status, body } = await parseJsonResponse<{
+      status: string;
+      message?: string;
+    }>(staleStatus);
+
+    expect(status).toBe(200);
+    expect(body.status).toBe("failed");
+    expect(body.message).toContain("timed out");
+  });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { SKINS } from "@/game/skins";
 import { ApiError, api } from "@/lib/client/api";
 import { queryKeys } from "@/lib/client/query-keys";
 import { fetchSessionUser } from "@/lib/client/session-query";
@@ -54,14 +55,44 @@ export function useSkinMutations(onUserUpdate?: (patch: Partial<User>) => void) 
 
   const equipMutation = useMutation({
     mutationFn: (skinId: string) => api.equipSkin(skinId),
+    onMutate: async (skinId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.session });
+      const previous = queryClient.getQueryData<User | null>(queryKeys.session);
+      patchSession({ activeSkin: skinId });
+      return { previous };
+    },
+    onError: (_err, _skinId, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(queryKeys.session, context.previous);
+      }
+    },
     onSuccess: (data) => {
-      const nextActiveSkin = data.activeSkin ?? "default";
-      patchSession({ activeSkin: nextActiveSkin });
+      patchSession({ activeSkin: data.activeSkin ?? "default" });
     },
   });
 
   const unlockMutation = useMutation({
     mutationFn: (skinId: string) => api.unlockSkin(skinId),
+    onMutate: async (skinId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.session });
+      const previous = queryClient.getQueryData<User | null>(queryKeys.session);
+      const skin = SKINS.find((item) => item.id === skinId);
+      if (previous && skin) {
+        patchSession({
+          totalScore: Math.max(0, previous.totalScore - skin.price),
+          unlockedSkins: previous.unlockedSkins.includes(skinId)
+            ? previous.unlockedSkins
+            : [...previous.unlockedSkins, skinId],
+          activeSkin: skinId,
+        });
+      }
+      return { previous };
+    },
+    onError: (_err, _skinId, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(queryKeys.session, context.previous);
+      }
+    },
     onSuccess: (data) => {
       patchSession({
         totalScore: data.totalScore,

@@ -385,5 +385,49 @@ describe("Game score API", () => {
     expect(thirdBody.body.bestScore).toBe(runC.score);
     expect(thirdBody.body.totalScore).toBe(runA.score + runB.score + runC.score);
     expect(thirdBody.body.isNewRecord).toBe(true);
+
+    const meResponse = await meGet(new Request("http://localhost/api/auth/me"));
+    const meBody = await parseJsonResponse<{
+      user: { bestScore: number; totalScore: number };
+    }>(meResponse);
+    expect(meBody.status).toBe(200);
+    expect(meBody.body.user.bestScore).toBe(runC.score);
+    expect(meBody.body.user.totalScore).toBe(runA.score + runB.score + runC.score);
+  });
+
+  it("GET /api/auth/me reflects fresh scores after each submit (session cache)", async () => {
+    await registerPost(
+      jsonRequest("http://localhost/api/auth/register", "POST", {
+        username: "cache_sync",
+        email: "cache_sync@example.com",
+        password: "password12",
+      }),
+    );
+
+    const runA = await playAndBackdate(50);
+    const first = await scorePost(
+      jsonRequest("http://localhost/api/game/score", "POST", runA),
+    );
+    expect(first.status).toBe(200);
+
+    const meAfterFirst = await meGet(new Request("http://localhost/api/auth/me"));
+    const afterFirstBody = await parseJsonResponse<{
+      user: { bestScore: number; totalScore: number };
+    }>(meAfterFirst);
+    expect(afterFirstBody.body.user.bestScore).toBe(runA.score);
+    expect(afterFirstBody.body.user.totalScore).toBe(runA.score);
+
+    const runB = await playAndBackdate(120);
+    const second = await scorePost(
+      jsonRequest("http://localhost/api/game/score", "POST", runB),
+    );
+    expect(second.status).toBe(200);
+
+    const meAfterSecond = await meGet(new Request("http://localhost/api/auth/me"));
+    const afterSecondBody = await parseJsonResponse<{
+      user: { bestScore: number; totalScore: number };
+    }>(meAfterSecond);
+    expect(afterSecondBody.body.user.bestScore).toBe(runB.score);
+    expect(afterSecondBody.body.user.totalScore).toBe(runA.score + runB.score);
   });
 });

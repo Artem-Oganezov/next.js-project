@@ -9,7 +9,8 @@ Principle: **1 repo = 1 game**. A new game is a new fork (see
 
 Docs: [New game](docs/NEW_GAME.md) · [Deploy](docs/DEPLOY.md) ·
 [Influencer launch](docs/INFLUENCER-LAUNCH.md) ·
-[Live prod checklist](docs/LIVE-PROD.md) · [Revive ads](docs/ADS.md) ·
+[Live prod checklist](docs/LIVE-PROD.md) · [Buyer notes](docs/BUYER-NOTES.md) ·
+[Revive ads](docs/ADS.md) ·
 [VPS + HTTPS](docs/VPS-DEPLOY.md) · [Architecture](docs/ARCHITECTURE.md) ·
 [Changelog](CHANGELOG.md)
 
@@ -115,14 +116,22 @@ Remaining boundary: replay proves the run followed game rules, not that a human 
 
 See [docs/VPS-DEPLOY.md](docs/VPS-DEPLOY.md) for HTTPS, nginx, `TRUST_PROXY`, and async score worker (`SCORE_ASYNC=true`).
 
+**Production** (2× app + worker + nginx LB, managed Mongo + Redis):
+
 ```bash
 git clone <repo> && cd <repo>
-cp .env.example .env    # MONGODB_URI (Atlas!), AUTH_SECRET, REDIS_URL, APP_URL
+cp .env.production.example .env
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+**Single-node dev** (local Redis in compose):
+
+```bash
+cp .env.production.example .env   # REDIS_URL=redis://redis:6379
 docker compose up -d --build
 ```
 
-- **Mongo outside** the app node (Atlas / dedicated server).
-- Redis runs in compose next to the app; for multiple servers, host Redis separately and update `REDIS_URL`.
+- **Mongo and Redis outside** the app VPS for production (Atlas + managed Redis TCP).
 
 ### Horizontal scaling
 

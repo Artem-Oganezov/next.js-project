@@ -37,6 +37,8 @@ export const msg = {
     reviveMismatch: "Revive data does not match session",
     saveFailed: "Could not save score — check your connection",
     scoreJobNotFound: "Score save job not found",
+    scoreJobTimedOut: "Score save timed out — try again",
+    emailNotVerified: "Verify your email before playing",
   },
   skins: {
     skinIdRequired: "skinId is required",

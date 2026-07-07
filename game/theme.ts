@@ -13,7 +13,7 @@ export const GAME_THEME = {
 
 export type GameTheme = typeof GAME_THEME;
 
-/** Darken hex color for limbs/shadows (canvas only). */
+/** Darken hex color for limbs/shadows (canvas + SVG dino). */
 export function darkenColor(color: string, factor = 0.82): string {
   if (!color.startsWith("#") || color.length < 7) {
     return GAME_THEME.leg;

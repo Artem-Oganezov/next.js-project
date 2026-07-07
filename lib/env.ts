@@ -10,6 +10,13 @@ const envSchema = z
         "MONGODB_URI must be a valid MongoDB connection string",
       ),
     AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
+    MONGODB_MAX_POOL_SIZE: z.coerce
+      .number()
+      .int()
+      .min(1, "MONGODB_MAX_POOL_SIZE must be at least 1")
+      .max(500, "MONGODB_MAX_POOL_SIZE cannot exceed 500")
+      .optional()
+      .default(100),
     // Option 1 (VPS / Docker): standard Redis over TCP.
     REDIS_URL: z
       .string()
@@ -51,6 +58,11 @@ const envSchema = z
       .enum(["true", "false"])
       .optional()
       .transform((value) => value === "true"),
+    // When true, session/start and score require emailVerified (production hardening).
+    REQUIRE_EMAIL_VERIFICATION: z
+      .enum(["true", "false"])
+      .optional()
+      .transform((value) => value === "true"),
     NODE_ENV: z.enum(["development", "production", "test"]).optional(),
   })
   .superRefine((env, ctx) => {
@@ -79,6 +91,7 @@ export function getEnv(): Env {
   const parsed = envSchema.safeParse({
     MONGODB_URI: process.env.MONGODB_URI,
     AUTH_SECRET: process.env.AUTH_SECRET,
+    MONGODB_MAX_POOL_SIZE: process.env.MONGODB_MAX_POOL_SIZE,
     REDIS_URL: process.env.REDIS_URL,
     UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
     UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -92,6 +105,7 @@ export function getEnv(): Env {
     EMAIL_FROM: process.env.EMAIL_FROM,
     TRUST_PROXY: process.env.TRUST_PROXY,
     SCORE_ASYNC: process.env.SCORE_ASYNC,
+    REQUIRE_EMAIL_VERIFICATION: process.env.REQUIRE_EMAIL_VERIFICATION,
     NODE_ENV: process.env.NODE_ENV,
   });
 

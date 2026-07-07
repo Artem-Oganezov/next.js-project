@@ -2,6 +2,21 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.7.0] — 2026-07-07
+
+### Added
+- **`REQUIRE_EMAIL_VERIFICATION`** env flag — optional gate on `session/start` and `score` (`lib/game/play-guard.ts`); enabled in `.env.production.example`.
+- **`MONGODB_MAX_POOL_SIZE`** validated in `lib/env.ts` (default 100, range 1–500).
+- **Leaderboard cache generation** — `lb:top10:gen` invalidates stale top-10 across nodes on ban/unban.
+- **Unban** restores Redis ZSET entry when user has `bestScore > 0`.
+- **Buyer documentation:** [docs/BUYER-NOTES.md](docs/BUYER-NOTES.md) — product scope, limits, customization checklist.
+- Tests: session cache after score (`/api/auth/me`), play guard, unban → leaderboard, stale cache bump (Redis).
+
+### Changed
+- Score route: single `parseInputLog` in `processScoreSubmission` (no duplicate parse in route).
+- Removed deprecated `scoreSchema` alias (`lib/validation/score.ts`).
+- Version bumped to **1.7.0**.
+
 ## [1.6.0] — 2026-07-05
 
 ### Added

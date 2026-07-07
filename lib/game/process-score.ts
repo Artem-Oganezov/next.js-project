@@ -1,3 +1,4 @@
+import { syncSessionCacheForUser } from "@/lib/auth/session";
 import { connectDB } from "@/lib/db/mongoose";
 import { invalidateTop10, upsertLeaderboardScore } from "@/lib/cache/leaderboard";
 import { gamePlugin, type DinoInputLog } from "@/lib/game/plugin";
@@ -233,6 +234,8 @@ export async function processScoreSubmission(
     updatedUser.username,
     updatedUser.bestScore,
   );
+
+  await syncSessionCacheForUser(userId);
 
   return {
     ok: true,

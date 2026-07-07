@@ -3,7 +3,7 @@ import { z } from "zod";
 import { badRequest, unauthorized } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { parseJsonBody } from "@/lib/api/http";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser, syncSessionCacheForUser } from "@/lib/auth/session";
 import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 // Import directly from game/skins (not @/game): the server route
@@ -67,6 +67,8 @@ export const POST = withApiHandler(
       return badRequest(msg.skins.insufficientPoints);
     }
 
+    await syncSessionCacheForUser(sessionUser.id);
+
     return NextResponse.json({
       totalScore: updated.totalScore,
       unlockedSkins: updated.unlockedSkins,
@@ -114,6 +116,8 @@ export const PUT = withApiHandler(
       }
       return badRequest(msg.skins.notUnlocked);
     }
+
+    await syncSessionCacheForUser(sessionUser.id);
 
     return NextResponse.json({
       activeSkin: updated.activeSkin,

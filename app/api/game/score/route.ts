@@ -7,6 +7,7 @@ import { isScoreAsyncEnabled } from "@/lib/config/score-async";
 import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { gamePlugin } from "@/lib/game/plugin";
+import { assertCanPlay } from "@/lib/game/play-guard";
 import { processScoreSubmission } from "@/lib/game/process-score";
 import { GameSession } from "@/lib/models/GameSession";
 import { recordSuspiciousSubmit } from "@/lib/security/anti-cheat";
@@ -22,6 +23,11 @@ export const POST = withApiHandler(
     const sessionUser = await getSessionUser();
     if (!sessionUser) {
       return unauthorized();
+    }
+
+    const playGuard = assertCanPlay(sessionUser);
+    if (!playGuard.ok) {
+      return forbidden(playGuard.message);
     }
 
     const userLimit = await enforceRateLimit(
@@ -48,11 +54,6 @@ export const POST = withApiHandler(
     const inputBytes = Buffer.byteLength(JSON.stringify(inputLog ?? null), "utf8");
     if (inputBytes > gamePlugin.maxInputLogBytes) {
       return badRequest(msg.game.inputLogTooLarge);
-    }
-
-    const inputParsed = gamePlugin.parseInputLog(inputLog);
-    if (!inputParsed.ok) {
-      return badRequest(inputParsed.message);
     }
 
     if (isScoreAsyncEnabled()) {

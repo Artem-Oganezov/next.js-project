@@ -3,10 +3,20 @@ import { requireAdminSecret } from "@/lib/admin/auth";
 import { badRequest, notFound } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { parseJsonBody } from "@/lib/api/http";
+import {
+  clearUserBanned,
+  markUserBanned,
+} from "@/lib/auth/session-cache";
+import {
+  invalidateTop10,
+  upsertLeaderboardScore,
+} from "@/lib/cache/leaderboard";
 import { connectDB } from "@/lib/db/mongoose";
+import { gamePlugin } from "@/lib/game/plugin";
 import { Session } from "@/lib/models/Session";
 import { User } from "@/lib/models/User";
 import { msg } from "@/lib/i18n/messages";
+import { purgeUserPlatformState } from "@/lib/user/platform-removal";
 import { z } from "zod";
 
 const banBodySchema = z.object({
@@ -47,7 +57,9 @@ function adminUserHandler(scope: string, action: "ban" | "unban", userId: string
         return notFound("User not found");
       }
 
+      await purgeUserPlatformState(user._id.toString(), user.username);
       await Session.deleteMany({ userId: user._id });
+      await markUserBanned(user._id.toString());
 
       return NextResponse.json({
         ok: true,
@@ -68,6 +80,17 @@ function adminUserHandler(scope: string, action: "ban" | "unban", userId: string
 
     if (!user) {
       return notFound("User not found");
+    }
+
+    await clearUserBanned(user._id.toString());
+
+    if (user.bestScore > 0) {
+      await upsertLeaderboardScore(
+        user.username,
+        user.bestScore,
+        gamePlugin.scoreOrder,
+      );
+      await invalidateTop10();
     }
 
     return NextResponse.json({
