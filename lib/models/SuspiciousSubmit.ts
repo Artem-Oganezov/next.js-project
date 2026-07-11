@@ -26,6 +26,10 @@ const suspiciousSubmitSchema = new Schema<ISuspiciousSubmit>(
 );
 
 suspiciousSubmitSchema.index({ createdAt: -1 });
+suspiciousSubmitSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 90 * 24 * 60 * 60 },
+);
 
 export const SuspiciousSubmit: Model<ISuspiciousSubmit> =
   mongoose.models.SuspiciousSubmit ??

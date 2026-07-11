@@ -56,7 +56,7 @@ export function buildContentSecurityPolicy(): string {
   const styleSrc = "'self' 'unsafe-inline'";
 
   return (
-    "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; " +
+    "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; " +
     `img-src ${imgSrc}; script-src ${scriptSrc}; style-src ${styleSrc}; connect-src ${connectSrc}; ` +
     `frame-src ${frameSrc};`
   );

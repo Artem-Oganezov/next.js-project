@@ -44,7 +44,6 @@ const userSchema = new Schema<IUser>(
     },
     googleId: {
       type: String,
-      default: null,
       sparse: true,
       unique: true,
     },
@@ -87,6 +86,8 @@ const userSchema = new Schema<IUser>(
 
 // Leaderboard and rank computation sort/filter by bestScore.
 userSchema.index({ bestScore: -1 });
+// Leaderboard/rank eligible users: isBanned filter + bestScore sort.
+userSchema.index({ isBanned: 1, bestScore: -1 });
 
 export const User: Model<IUser> =
   mongoose.models.User ?? mongoose.model<IUser>("User", userSchema);

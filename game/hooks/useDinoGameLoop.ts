@@ -1,5 +1,6 @@
 import { useEffect, type MutableRefObject, type RefObject } from "react";
 import { api } from "@/lib/client/api";
+import { ApiError } from "@/lib/client/api-error";
 import { createReviveAdProvider } from "@/lib/client/ads";
 import { ui } from "@/lib/i18n/ui";
 import {
@@ -189,8 +190,8 @@ export function useDinoGameLoop(
           onScoreSaved({ bestScore: data.bestScore, totalScore: data.totalScore });
           onRankInfo(data.rank, data.nextUsername);
         })
-        .catch(() => {
-          onSaveError(ui.game.saveFailed);
+        .catch((err) => {
+          onSaveError(err instanceof ApiError ? err.message : ui.game.saveFailed);
         });
     };
 
@@ -212,33 +213,42 @@ export function useDinoGameLoop(
       onSaveError(null);
 
       const provider = createReviveAdProvider(() => adSlotRef.current);
+      const sessionId = gameSessionId;
 
-      void provider.show().then((outcome) => {
-        if (outcome !== "completed") {
-          onSaveError(
-            outcome === "dismissed" ? ui.game.adDismissed : ui.game.reviveFailed,
-          );
-          onAdLoading(false);
-          adPending = false;
-          return;
-        }
+      void api
+        .gameReviveChallenge(sessionId)
+        .then((challenge) => {
+          const challengeStartedAt = Date.now();
+          return provider.show().then(async (outcome) => {
+            if (outcome !== "completed") {
+              onSaveError(
+                outcome === "dismissed" ? ui.game.adDismissed : ui.game.reviveFailed,
+              );
+              onAdLoading(false);
+              adPending = false;
+              return;
+            }
 
-        return api
-          .gameRevive(gameSessionId!)
-          .then(() => {
+            const elapsed = Date.now() - challengeStartedAt;
+            const remaining = challenge.minWaitMs - elapsed;
+            if (remaining > 0) {
+              await new Promise((resolve) => setTimeout(resolve, remaining));
+            }
+
+            await api.gameRevive(sessionId, challenge.challengeId);
             hasRevived = true;
             pausedForReviveOffer = false;
             engine!.revive();
             onClearReviveOffer();
             onAdLoading(false);
             adPending = false;
-          })
-          .catch(() => {
-            onSaveError(ui.game.reviveFailed);
-            onAdLoading(false);
-            adPending = false;
           });
-      });
+        })
+        .catch((err) => {
+          onSaveError(err instanceof ApiError ? err.message : ui.game.reviveFailed);
+          onAdLoading(false);
+          adPending = false;
+        });
     };
 
     watchAdRef.current = watchAdAndRevive;

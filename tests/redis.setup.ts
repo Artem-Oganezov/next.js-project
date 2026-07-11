@@ -25,6 +25,7 @@ applyBaseTestEnv();
 
 const redisBackend: RedisTestBackend = await resolveRedisForTests();
 process.env.REDIS_URL = redisBackend.url;
+process.env.REVIVE_CHALLENGE_MIN_MS = "0";
 resetEnvCache();
 
 export function isRedisAvailable(): boolean {
@@ -46,6 +47,7 @@ afterEach(async () => {
   await resetMongooseBetweenTests();
   process.env.MONGODB_URI = mongoBackend.uri;
   process.env.REDIS_URL = redisBackend.url;
+  process.env.REVIVE_CHALLENGE_MIN_MS = "0";
   resetEnvCache();
 
   if (redisBackend.available) {

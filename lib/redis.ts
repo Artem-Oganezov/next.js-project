@@ -92,16 +92,16 @@ function createIoRedisClient(url: string): RedisClient {
 
   return {
     async ping() {
-      return run(() => client.ping());
+      await run(() => client.ping());
     },
     async get(key) {
       return run(() => client.get(key));
     },
     async setEx(key, value, exSeconds) {
-      return run(() => client.set(key, value, "EX", exSeconds));
+      await run(() => client.set(key, value, "EX", exSeconds));
     },
     async del(key) {
-      return run(() => client.del(key));
+      await run(() => client.del(key));
     },
     async incr(key) {
       return run(() => client.incr(key));
@@ -118,21 +118,21 @@ function createIoRedisClient(url: string): RedisClient {
       });
     },
     async expire(key, seconds) {
-      return run(() => client.expire(key, seconds));
+      await run(() => client.expire(key, seconds));
     },
     async ttl(key) {
       return run(() => client.ttl(key));
     },
     async zadd(key, entries) {
       if (entries.length === 0) return;
-      return run(() => {
+      await run(() => {
         const args = entries.flatMap((e) => [e.score, e.member]);
         return client.zadd(key, ...args);
       });
     },
     async zrem(key, members) {
       if (members.length === 0) return;
-      return run(() => client.zrem(key, ...members));
+      await run(() => client.zrem(key, ...members));
     },
     async zcard(key) {
       return run(() => client.zcard(key));
@@ -160,7 +160,7 @@ function createIoRedisClient(url: string): RedisClient {
       });
     },
     async lpush(key, value) {
-      return run(() => client.lpush(key, value));
+      await run(() => client.lpush(key, value));
     },
     async brpop(key, timeoutSeconds) {
       return run(async () => {
@@ -394,3 +394,4 @@ export async function resetRedisCache(): Promise<void> {
   warmPromise = null;
   ioRedisNative = null;
 }
+

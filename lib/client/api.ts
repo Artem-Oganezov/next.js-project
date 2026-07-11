@@ -7,23 +7,46 @@ type ApiFetchOptions = RequestInit & {
   json?: unknown;
 };
 
+async function parseApiResponse<T>(response: Response): Promise<T & { message?: string }> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new ApiError(
+      response.status,
+      response.status >= 500
+        ? "Server error — try again later"
+        : "Unexpected server response",
+    );
+  }
+
+  try {
+    return (await response.json()) as T & { message?: string };
+  } catch {
+    throw new ApiError(response.status, "Invalid server response");
+  }
+}
+
 export async function apiFetch<T>(
   url: string,
   options: ApiFetchOptions = {},
 ): Promise<T> {
   const { json, headers, ...rest } = options;
 
-  const response = await fetch(url, {
-    ...rest,
-    credentials: "include",
-    headers: {
-      ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
-      ...headers,
-    },
-    body: json !== undefined ? JSON.stringify(json) : rest.body,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...rest,
+      credentials: "include",
+      headers: {
+        ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...headers,
+      },
+      body: json !== undefined ? JSON.stringify(json) : rest.body,
+    });
+  } catch {
+    throw new ApiError(0, "Network error — check your connection");
+  }
 
-  const data = (await response.json()) as T & { message?: string };
+  const data = await parseApiResponse<T>(response);
 
   if (!response.ok) {
     throw new ApiError(response.status, data.message ?? "Request failed");
@@ -67,10 +90,18 @@ export const api = {
       "/api/game/session/start",
       { method: "POST" },
     ),
-  gameRevive: (sessionId: string) =>
+  gameReviveChallenge: (sessionId: string) =>
+    apiFetch<{ challengeId: string; minWaitMs: number }>(
+      "/api/game/revive/challenge",
+      {
+        method: "POST",
+        json: { sessionId },
+      },
+    ),
+  gameRevive: (sessionId: string, challengeId: string) =>
     apiFetch<{ ok: boolean }>("/api/game/revive", {
       method: "POST",
-      json: { sessionId },
+      json: { sessionId, challengeId },
     }),
   submitScore: (
     score: number,

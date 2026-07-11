@@ -6,6 +6,51 @@ const TOP10_KEY = "lb:top10";
 const TOP10_GEN_KEY = "lb:top10:gen";
 const TOP10_TTL_SEC = 60;
 const SCORES_KEY = "lb:scores";
+const UPSERT_MAX_ATTEMPTS = 2;
+const UPSERT_RETRY_MS = 25;
+const UPSERT_OPERATION_TIMEOUT_MS = 500;
+
+async function zaddLeaderboardScore(
+  username: string,
+  bestScore: number,
+  order: ScoreOrder,
+): Promise<void> {
+  await Promise.race([
+    getRedis().zadd(SCORES_KEY, [
+      { score: toLeaderboardKey(bestScore, order), member: username },
+    ]),
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("redis-timeout")), UPSERT_OPERATION_TIMEOUT_MS);
+    }),
+  ]);
+}
+
+export async function upsertLeaderboardScore(
+  username: string,
+  bestScore: number,
+  order: ScoreOrder,
+): Promise<void> {
+  for (let attempt = 1; attempt <= UPSERT_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      await zaddLeaderboardScore(username, bestScore, order);
+      return;
+    } catch (error) {
+      if (attempt === UPSERT_MAX_ATTEMPTS) {
+        console.error(
+          JSON.stringify({
+            level: "error",
+            scope: "leaderboard",
+            action: "upsert-failed",
+            username,
+            message: error instanceof Error ? error.message : "unknown",
+          }),
+        );
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, UPSERT_RETRY_MS * attempt));
+    }
+  }
+}
 
 export type LeaderboardEntry = {
   username: string;
@@ -83,19 +128,6 @@ export async function removeLeaderboardEntry(username: string): Promise<void> {
  * ZSET of all scores (member = username, score = normalized bestScore).
  * Updated on each new record; used for O(log N) rank.
  */
-export async function upsertLeaderboardScore(
-  username: string,
-  bestScore: number,
-  order: ScoreOrder,
-): Promise<void> {
-  try {
-    await getRedis().zadd(SCORES_KEY, [
-      { score: toLeaderboardKey(bestScore, order), member: username },
-    ]);
-  } catch {
-    // rank will be computed via Mongo fallback
-  }
-}
 
 export async function bulkSeedLeaderboard(
   entries: { username: string; bestScore: number }[],

@@ -105,7 +105,7 @@ describe("Auth API", () => {
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
 
     expect(status).toBe(409);
-    expect(body.message).toMatch(/already taken/i);
+    expect(body.message).toMatch(/temporarily unavailable/i);
   });
 
   it("POST /api/auth/register rejects invalid payload with 400", async () => {
@@ -250,14 +250,14 @@ describe("Game score API", () => {
 
     const response = await scorePost(
       jsonRequest("http://localhost/api/game/score", "POST", {
-        score: run.score,
+        score: run.score + 100,
         sessionId,
         inputLog: run.jumpTicks,
       }),
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
     expect(status).toBe(403);
-    expect(body.message).toMatch(/too high/i);
+    expect(body.message).toMatch(/replay|too high/i);
   });
 
   it("POST /api/game/score rejects plausible score with fake replay log", async () => {

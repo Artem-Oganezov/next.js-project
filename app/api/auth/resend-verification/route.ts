@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { badRequest, unauthorized } from "@/lib/api/errors";
+import { badRequest, tooManyRequests, unauthorized } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { sendVerificationEmail } from "@/lib/auth/mail";
 import { getSessionUser } from "@/lib/auth/session";
 import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/models/User";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
+import { msg } from "@/lib/i18n/messages";
 
 export const POST = withApiHandler(
   "auth/resend-verification",
@@ -16,7 +18,16 @@ export const POST = withApiHandler(
     }
 
     if (sessionUser.emailVerified) {
-      return badRequest("Email is already verified");
+      return badRequest(msg.auth.emailAlreadyVerified);
+    }
+
+    const userLimit = await enforceRateLimit(
+      `auth:resend:user:${sessionUser.id}`,
+      1,
+      RATE_LIMIT.RESEND_VERIFY_COOLDOWN_MS,
+    );
+    if (!userLimit.ok) {
+      return tooManyRequests(msg.common.tooManyRequests);
     }
 
     await connectDB();

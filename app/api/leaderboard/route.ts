@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withApiHandler } from "@/lib/api/handler";
+import { RATE_LIMIT } from "@/lib/config/app";
 import {
   getCachedTop10,
   setCachedTop10,
@@ -11,21 +12,29 @@ import { LEADERBOARD_ELIGIBLE_FILTER } from "@/lib/game/leaderboard-eligibility"
 import { leaderboardSortDirection } from "@/lib/game/score-order";
 import { User } from "@/lib/models/User";
 
-export const GET = withApiHandler("leaderboard", async () => {
-  const cached = await getCachedTop10();
-  if (cached) {
-    return NextResponse.json({ leaderboard: cached });
-  }
+export const GET = withApiHandler(
+  "leaderboard",
+  async () => {
+    const cached = await getCachedTop10();
+    if (cached) {
+      return NextResponse.json({ leaderboard: cached });
+    }
 
-  await connectDB();
+    await connectDB();
 
-  const leaderboard = (await User.find(LEADERBOARD_ELIGIBLE_FILTER)
-    .sort({ bestScore: leaderboardSortDirection(gamePlugin.scoreOrder) })
-    .limit(10)
-    .select("username bestScore activeSkin -_id")
-    .lean()) as LeaderboardEntry[];
+    const leaderboard = (await User.find(LEADERBOARD_ELIGIBLE_FILTER)
+      .sort({ bestScore: leaderboardSortDirection(gamePlugin.scoreOrder) })
+      .limit(10)
+      .select("username bestScore activeSkin -_id")
+      .lean()) as LeaderboardEntry[];
 
-  await setCachedTop10(leaderboard);
+    await setCachedTop10(leaderboard);
 
-  return NextResponse.json({ leaderboard });
-});
+    return NextResponse.json({ leaderboard });
+  },
+  {
+    keyPrefix: "leaderboard",
+    maxRequests: RATE_LIMIT.LEADERBOARD_MAX_REQUESTS,
+    windowMs: RATE_LIMIT.LEADERBOARD_WINDOW_MS,
+  },
+);

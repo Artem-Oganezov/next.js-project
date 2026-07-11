@@ -5,6 +5,7 @@ describe("buildContentSecurityPolicy", () => {
   it("uses strict policy when ads are disabled", () => {
     vi.stubEnv("NEXT_PUBLIC_REVIVE_AD_PROVIDER", "none");
     const csp = buildContentSecurityPolicy();
+    expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("script-src 'self' 'unsafe-inline'");
     expect(csp).not.toContain("googlesyndication.com");
     vi.unstubAllEnvs();

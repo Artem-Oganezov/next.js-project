@@ -12,6 +12,8 @@ export const msg = {
     invalidCredentials: "Invalid credentials",
     accountBanned: "Account is banned",
     userExists: "Username or email already taken",
+    registrationUnavailable:
+      "Registration is temporarily unavailable. Try again later.",
     usernameMin: "Username: minimum 3 characters",
     usernameMax: "Username: maximum 30 characters",
     usernameFormat: "Username: letters, digits and underscore only",
@@ -39,6 +41,8 @@ export const msg = {
     inputLogTooLarge: "Input log too large",
     tooManyRequests: "Too many requests",
     reviveUnavailable: "Revive is not available for this run",
+    reviveChallengeRequired: "Start revive challenge before claiming revive",
+    reviveChallengeTooEarly: "Revive is not ready yet",
     reviveMismatch: "Revive data does not match session",
     saveFailed: "Could not save score — check your connection",
     scoreJobNotFound: "Score save job not found",

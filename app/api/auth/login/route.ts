@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { badRequest, forbidden, unauthorized } from "@/lib/api/errors";
+import { badRequest, forbidden, tooManyRequests, unauthorized } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { parseJsonBody } from "@/lib/api/http";
 import { verifyLoginPassword } from "@/lib/auth/password";
@@ -7,6 +7,7 @@ import { createSession, toPublicUser } from "@/lib/auth/session";
 import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/models/User";
+import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { loginSchema } from "@/lib/validation/auth";
 import { msg } from "@/lib/i18n/messages";
 
@@ -24,6 +25,15 @@ export const POST = withApiHandler(
     }
 
     const { username, password } = parsed.data;
+
+    const userLimit = await enforceRateLimit(
+      `auth:login:user:${username.toLowerCase()}`,
+      RATE_LIMIT.LOGIN_PER_USER_MAX_REQUESTS,
+      RATE_LIMIT.LOGIN_PER_USER_WINDOW_MS,
+    );
+    if (!userLimit.ok) {
+      return tooManyRequests(msg.common.tooManyRequests);
+    }
 
     await connectDB();
 

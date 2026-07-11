@@ -33,7 +33,7 @@ export const POST = withApiHandler(
       $or: [{ username }, { email }],
     });
     if (existing) {
-      return conflict(msg.auth.userExists);
+      return conflict(msg.auth.registrationUnavailable);
     }
 
     try {
@@ -59,7 +59,7 @@ export const POST = withApiHandler(
       return NextResponse.json({ user: toPublicUser(user) }, { status: 201 });
     } catch (error) {
       if (error instanceof mongoose.mongo.MongoServerError && error.code === 11000) {
-        return conflict(msg.auth.userExists);
+        return conflict(msg.auth.registrationUnavailable);
       }
       throw error;
     }

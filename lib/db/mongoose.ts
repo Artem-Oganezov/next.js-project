@@ -30,6 +30,8 @@ export async function connectDB(): Promise<typeof mongoose> {
     const { MONGODB_MAX_POOL_SIZE } = getEnv();
     cached.promise = mongoose.connect(MONGODB_URI, {
       maxPoolSize: MONGODB_MAX_POOL_SIZE,
+      serverSelectionTimeoutMS: 5_000,
+      socketTimeoutMS: 10_000,
     });
   }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withApiHandler } from "@/lib/api/handler";
 import { APP_VERSION } from "@/lib/config/version";
+import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { getRedis } from "@/lib/redis";
 
@@ -22,20 +23,27 @@ async function checkRedis(): Promise<boolean> {
   }
 }
 
-export const GET = withApiHandler("health", async () => {
-  const [mongoOk, redisOk] = await Promise.all([checkMongo(), checkRedis()]);
+export const GET = withApiHandler(
+  "health",
+  async () => {
+    const [mongoOk, redisOk] = await Promise.all([checkMongo(), checkRedis()]);
 
-  // Redis degrades the service (no cache and rate limit) but does not take it down.
-  const ok = mongoOk;
+    const ok = mongoOk;
 
-  return NextResponse.json(
-    {
-      status: ok ? (redisOk ? "ok" : "degraded") : "down",
-      version: APP_VERSION,
-      mongo: mongoOk ? "connected" : "disconnected",
-      redis: redisOk ? "connected" : "disconnected",
-      timestamp: new Date().toISOString(),
-    },
-    { status: ok ? 200 : 503 },
-  );
-});
+    return NextResponse.json(
+      {
+        status: ok ? (redisOk ? "ok" : "degraded") : "down",
+        version: APP_VERSION,
+        mongo: mongoOk ? "connected" : "disconnected",
+        redis: redisOk ? "connected" : "disconnected",
+        timestamp: new Date().toISOString(),
+      },
+      { status: ok ? 200 : 503 },
+    );
+  },
+  {
+    keyPrefix: "health",
+    maxRequests: RATE_LIMIT.HEALTH_MAX_REQUESTS,
+    windowMs: RATE_LIMIT.HEALTH_WINDOW_MS,
+  },
+);

@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
 import { assertCanPlay } from "@/lib/game/play-guard";
+import { peekReviveChallenge, clearReviveChallenge } from "@/lib/game/revive-challenge";
 import { GameSession } from "@/lib/models/GameSession";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { reviveBodySchema } from "@/lib/validation/revive";
@@ -14,6 +15,30 @@ import { msg } from "@/lib/i18n/messages";
 export const POST = withApiHandler(
   "game/revive",
   async (request) => {
+    const body = await parseJsonBody(request);
+    if (!body.ok) {
+      return body.response;
+    }
+
+    const parsed = reviveBodySchema.safeParse(body.data);
+    if (!parsed.success) {
+      return badRequest(parsed.error.issues[0]?.message ?? msg.common.invalidPayload);
+    }
+
+    const { sessionId, challengeId } = parsed.data;
+
+    if (challengeId !== sessionId) {
+      return forbidden(msg.game.reviveChallengeRequired);
+    }
+
+    const challenge = await peekReviveChallenge(sessionId);
+    if (!challenge.ok) {
+      if (challenge.code === "too-early") {
+        return forbidden(msg.game.reviveChallengeTooEarly);
+      }
+      return forbidden(msg.game.reviveChallengeRequired);
+    }
+
     const sessionUser = await getSessionUser();
     if (!sessionUser) {
       return unauthorized();
@@ -32,18 +57,6 @@ export const POST = withApiHandler(
     if (!userLimit.ok) {
       return tooManyRequests(msg.game.tooManyRequests);
     }
-
-    const body = await parseJsonBody(request);
-    if (!body.ok) {
-      return body.response;
-    }
-
-    const parsed = reviveBodySchema.safeParse(body.data);
-    if (!parsed.success) {
-      return badRequest(parsed.error.issues[0]?.message ?? msg.common.invalidPayload);
-    }
-
-    const { sessionId } = parsed.data;
 
     await connectDB();
 
@@ -71,6 +84,8 @@ export const POST = withApiHandler(
       }
       return forbidden(msg.game.reviveUnavailable);
     }
+
+    await clearReviveChallenge(sessionId);
 
     return NextResponse.json({ ok: true });
   },

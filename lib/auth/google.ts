@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { OAuth2Client } from "google-auth-library";
+import { OAuth2Client, type TokenPayload } from "google-auth-library";
 import { connectDB } from "@/lib/db/mongoose";
 import { getEnv } from "@/lib/env";
 import { User, type IUser } from "@/lib/models/User";
@@ -86,7 +86,7 @@ export async function fetchGoogleProfileFromCode(
   let idToken: string | undefined;
   try {
     const { tokens } = await client.getToken(code);
-    idToken = tokens.id_token;
+    idToken = tokens.id_token ?? undefined;
   } catch {
     throw new GoogleOAuthError("Google token exchange failed", "token_exchange_failed");
   }
@@ -95,9 +95,7 @@ export async function fetchGoogleProfileFromCode(
     throw new GoogleOAuthError("Google did not return an ID token", "profile_invalid");
   }
 
-  let payload: NonNullable<
-    Awaited<ReturnType<OAuth2Client["verifyIdToken"]>>["getPayload"]
-  >;
+  let payload: TokenPayload | undefined;
   try {
     const ticket = await client.verifyIdToken({
       idToken,

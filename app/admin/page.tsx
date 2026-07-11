@@ -15,33 +15,30 @@ type Submission = {
 
 export default function AdminPage() {
   const [secretInput, setSecretInput] = useState("");
-  const [activeSecret, setActiveSecret] = useState<string | null>(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
-  const adminFetch = useCallback(
-    async (path: string, init?: RequestInit) => {
-      if (!activeSecret) {
-        throw new Error("Admin secret is not set");
+  const adminFetch = useCallback(async (path: string, init?: RequestInit) => {
+    const response = await fetch(path, {
+      ...init,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...init?.headers,
+      },
+    });
+    const data = (await response.json()) as { message?: string };
+    if (!response.ok) {
+      if (response.status === 401) {
+        setIsUnlocked(false);
       }
-      const response = await fetch(path, {
-        ...init,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Secret": activeSecret,
-          ...init?.headers,
-        },
-      });
-      const data = (await response.json()) as { message?: string };
-      if (!response.ok) {
-        throw new Error(data.message ?? `HTTP ${response.status}`);
-      }
-      return response;
-    },
-    [activeSecret],
-  );
+      throw new Error(data.message ?? `HTTP ${response.status}`);
+    }
+    return response;
+  }, []);
 
   const loadSubmissions = useCallback(async () => {
     setLoading(true);
@@ -58,22 +55,48 @@ export default function AdminPage() {
   }, [adminFetch]);
 
   useEffect(() => {
-    if (activeSecret) {
+    if (isUnlocked) {
       void loadSubmissions();
     }
-  }, [activeSecret, loadSubmissions]);
+  }, [isUnlocked, loadSubmissions]);
 
-  const handleUnlockSecret = () => {
+  const handleUnlockSecret = async () => {
     if (secretInput.length < 32) {
       setError("Secret must be at least 32 characters");
       return;
     }
-    setActiveSecret(secretInput);
+
     setError(null);
+    try {
+      const response = await fetch("/api/admin/session", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Secret": secretInput,
+        },
+      });
+      const data = (await response.json()) as { message?: string };
+      if (!response.ok) {
+        throw new Error(data.message ?? `HTTP ${response.status}`);
+      }
+      setSecretInput("");
+      setIsUnlocked(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to unlock admin");
+    }
   };
 
-  const handleLogout = () => {
-    setActiveSecret(null);
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/session", {
+        method: "DELETE",
+        credentials: "include",
+      });
+    } catch {
+      // Best-effort logout.
+    }
+    setIsUnlocked(false);
     setSubmissions([]);
     setSecretInput("");
   };
@@ -93,13 +116,13 @@ export default function AdminPage() {
     }
   };
 
-  if (!activeSecret) {
+  if (!isUnlocked) {
     return (
       <main className="mx-auto max-w-md p-6 space-y-4">
         <h1 className="text-xl font-bold text-[#535353]">Admin</h1>
         <p className="text-sm text-[#737373]">
-          Enter <code className="text-xs">ADMIN_SECRET</code> from the server environment.
-          The secret stays in memory only for this tab session.
+          Enter <code className="text-xs">ADMIN_SECRET</code> once to mint an httpOnly
+          admin session cookie for this browser.
         </p>
         <label className="flex flex-col gap-1 text-sm text-[#535353]">
           Admin secret
@@ -113,7 +136,7 @@ export default function AdminPage() {
         </label>
         <button
           type="button"
-          onClick={handleUnlockSecret}
+          onClick={() => void handleUnlockSecret()}
           data-testid="admin-unlock-btn"
           className="px-4 py-2 bg-[#535353] text-white rounded-sm text-sm"
         >
@@ -143,7 +166,7 @@ export default function AdminPage() {
           </button>
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => void handleLogout()}
             className="px-3 py-1 text-sm border border-[#d0d0d0] rounded-sm"
           >
             Log out

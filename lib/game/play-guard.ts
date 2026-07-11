@@ -11,7 +11,7 @@ export function isEmailVerificationRequired(): boolean {
 }
 
 /** Gate gameplay APIs when REQUIRE_EMAIL_VERIFICATION is enabled. */
-export function assertCanPlay(user: PublicUser): PlayGuardResult {
+export function assertCanPlay(user: Pick<PublicUser, "emailVerified">): PlayGuardResult {
   if (!isEmailVerificationRequired() || user.emailVerified) {
     return { ok: true };
   }
