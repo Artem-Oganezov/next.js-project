@@ -66,6 +66,20 @@ describe("validateGameScore", () => {
     expect(result.ok).toBe(true);
   });
 
+  it("rejects score above replay tick ceiling even when wall clock is longer", () => {
+    const result = validateGameScore(
+      500,
+      startedAt,
+      config,
+      new Date(startedAt.getTime() + 60_000),
+      { replayTicks: 60 },
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe("score-ceiling");
+    }
+  });
+
   it("rejects expired session", () => {
     const result = validateGameScore(
       50,

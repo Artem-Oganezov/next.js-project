@@ -35,10 +35,10 @@ function GameTitle() {
   const base = gameMeta.displayName.replace(accent, "").trim();
 
   return (
-    <h1 className="game-title">
+    <h2 className="game-title">
       {base}
       <span className="game-title-accent">{accent}</span>
-    </h1>
+    </h2>
   );
 }
 

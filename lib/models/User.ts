@@ -1,10 +1,14 @@
 import mongoose, { Schema, type Document, type Model } from "mongoose";
 
+export type AuthProvider = "local" | "google";
+
 export interface IUser extends Document {
   username: string;
   email: string;
   emailVerified: boolean;
-  passwordHash: string;
+  authProvider: AuthProvider;
+  googleId: string | null;
+  passwordHash: string | null;
   bestScore: number;
   totalScore: number;
   unlockedSkins: string[];
@@ -33,9 +37,20 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+    googleId: {
+      type: String,
+      default: null,
+      sparse: true,
+      unique: true,
+    },
     passwordHash: {
       type: String,
-      required: true,
+      default: null,
     },
     bestScore: {
       type: Number,

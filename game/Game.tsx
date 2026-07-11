@@ -10,7 +10,6 @@ import SessionStatusOverlay from "@/game/components/SessionStatusOverlay";
 import { GAME_CONFIG } from "@/game/constants";
 import { useDinoGameLoop } from "@/game/hooks/useDinoGameLoop";
 import { gameMeta } from "@/game/meta";
-import { createGameSounds } from "@/game/sounds";
 
 const { CANVAS_WIDTH, CANVAS_HEIGHT } = GAME_CONFIG;
 const REVIVE_OFFER_COUNTDOWN_SEC = 15;
@@ -30,7 +29,6 @@ export default function Game({
   const saveScoreRef = useRef<(() => void) | null>(null);
   const retrySessionRef = useRef<(() => void) | null>(null);
   const adSlotRef = useRef<HTMLDivElement>(null);
-  const soundsRef = useRef(createGameSounds());
   const onScoreSavedRef = useRef(onScoreSaved);
   const activeSkinColorRef = useRef(activeSkinColor);
 
@@ -138,7 +136,6 @@ export default function Game({
     {
       canvasRef,
       activeSkinColorRef,
-      soundsRef,
       onScoreChange: setScore,
       onReviveOffer: () => setReviveOffer(true),
       onSetGameOver: setGameOver,

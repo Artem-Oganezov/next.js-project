@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { SCORE_JOB_PROCESSING_TIMEOUT_MS } from "@/lib/config/score-async";
 import type { ScoreSubmitResult } from "@/lib/game/process-score";
+import { releaseGameSessionClaim, releaseGameSessionPending } from "@/lib/game/session-claim";
 import { msg } from "@/lib/i18n/messages";
 import { getRedis } from "@/lib/redis";
 
@@ -21,6 +22,10 @@ export type ScoreJobPayload = {
   sessionId: string;
   inputLog: unknown;
   enqueuedAt: string;
+  /** Snapshot from route enqueue — skips worker GameSession.findOne. */
+  sessionSeed: string;
+  sessionStartedAt: string;
+  sessionReviveUsed: boolean;
 };
 
 export type ScoreJobRecord = {
@@ -46,7 +51,10 @@ async function readScoreJobRecord(jobId: string): Promise<ScoreJobRecord | null>
   return JSON.parse(raw) as ScoreJobRecord;
 }
 
-async function writeScoreJobRecord(jobId: string, record: ScoreJobRecord): Promise<void> {
+export async function writeScoreJobRecord(
+  jobId: string,
+  record: ScoreJobRecord,
+): Promise<void> {
   await getRedis().setEx(jobKey(jobId), JSON.stringify(record), SCORE_JOB_TTL_SEC);
 }
 
@@ -71,6 +79,8 @@ async function failStaleScoreJob(
     message: msg.game.scoreJobTimedOut,
   };
   await writeScoreJobRecord(jobId, failed);
+  await releaseGameSessionPending(record.sessionId);
+  await releaseGameSessionClaim(record.sessionId);
   await releaseScoreSessionLock(record.sessionId);
   return failed;
 }
@@ -125,8 +135,11 @@ export async function enqueueScoreJob(
     sessionId: payload.sessionId,
   };
 
-  await writeScoreJobRecord(jobId, record);
-  await redis.lpush(SCORE_QUEUE_KEY, JSON.stringify(job));
+  await redis
+    .pipeline()
+    .setEx(jobKey(jobId), JSON.stringify(record), SCORE_JOB_TTL_SEC)
+    .lpush(SCORE_QUEUE_KEY, JSON.stringify(job))
+    .exec();
 
   return { jobId, created: true };
 }

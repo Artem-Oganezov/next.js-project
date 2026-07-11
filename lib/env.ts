@@ -63,9 +63,25 @@ const envSchema = z
       .enum(["true", "false"])
       .optional()
       .transform((value) => value === "true"),
+    GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+    GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     NODE_ENV: z.enum(["development", "production", "test"]).optional(),
   })
   .superRefine((env, ctx) => {
+    const hasGoogleId = Boolean(env.GOOGLE_CLIENT_ID);
+    const hasGoogleSecret = Boolean(env.GOOGLE_CLIENT_SECRET);
+    if (hasGoogleId !== hasGoogleSecret) {
+      ctx.addIssue({
+        code: "custom",
+        message: "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set or both omitted",
+      });
+    }
+    if (hasGoogleId && !env.APP_URL) {
+      ctx.addIssue({
+        code: "custom",
+        message: "APP_URL is required when Google OAuth is enabled",
+      });
+    }
     const hasTcp = Boolean(env.REDIS_URL);
     const hasUpstash = Boolean(
       env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN,
@@ -75,6 +91,12 @@ const envSchema = z
         code: "custom",
         message:
           "Redis is required: set REDIS_URL or UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN",
+      });
+    }
+    if (env.SCORE_ASYNC && !hasTcp) {
+      ctx.addIssue({
+        code: "custom",
+        message: "SCORE_ASYNC requires REDIS_URL (TCP); Upstash REST cannot run the score worker queue",
       });
     }
   });
@@ -106,6 +128,8 @@ export function getEnv(): Env {
     TRUST_PROXY: process.env.TRUST_PROXY,
     SCORE_ASYNC: process.env.SCORE_ASYNC,
     REQUIRE_EMAIL_VERIFICATION: process.env.REQUIRE_EMAIL_VERIFICATION,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     NODE_ENV: process.env.NODE_ENV,
   });
 

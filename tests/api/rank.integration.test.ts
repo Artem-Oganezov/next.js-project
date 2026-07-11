@@ -82,6 +82,7 @@ async function seedOpponent(username: string, bestScore: number): Promise<void> 
     email: `${username}@example.com`,
     passwordHash: "x".repeat(60),
     bestScore,
+    googleId: `test-google-${username}`,
   });
 }
 
@@ -161,5 +162,29 @@ describe("Rank API", () => {
       "second",
       "third",
     ]);
+  });
+
+  it("GET /api/leaderboard includes legacy users without isBanned field", async () => {
+    await connectDB();
+    await User.collection.insertOne({
+      username: "legacy_user",
+      email: "legacy@example.com",
+      passwordHash: "hash",
+      bestScore: 250,
+      unlockedSkins: ["default"],
+      activeSkin: "default",
+    });
+
+    const response = await leaderboardGet(
+      new Request("http://localhost/api/leaderboard"),
+    );
+    const { status, body } = await parseJsonResponse<{
+      leaderboard: { username: string; bestScore: number }[];
+    }>(response);
+
+    expect(status).toBe(200);
+    expect(body.leaderboard.some((entry) => entry.username === "legacy_user")).toBe(
+      true,
+    );
   });
 });

@@ -47,12 +47,31 @@ export const ui = {
     emailVerifiedTitle: "Email verification",
     emailVerifiedSuccess: "Your email is verified. You can log in and play.",
     emailVerifiedFailed: "This verification link is invalid or expired.",
+    continueWithGoogle: "Continue with Google",
+    orContinueWithEmail: "or continue with email",
+    googleSignInFailed: "Google sign-in failed. Please try again.",
+    googleEmailTaken:
+      "This email is already registered with a password. Log in with your password instead.",
+    googleNotConfigured: "Google sign-in is not available right now.",
+    accountBanned: "This account is banned.",
+    deleteConfirmOAuth: "Permanently delete your account? This cannot be undone.",
   },
   nav: {
     home: "Home",
     leaderboard: "Leaderboard",
     profile: "Profile",
     main: "Main navigation",
+  },
+  seo: {
+    landingAriaLabel: "About this game",
+    landingTitle: (name: string) => `${name} — free online browser game`,
+    landingLead:
+      "Jump over obstacles, beat your high score, and climb the global top-10 leaderboard. Accounts, fair-play validation, and saved progress included.",
+    landingFeatures: [
+      "Free to play in your browser",
+      "Server-validated scores and anti-cheat",
+      "Top-10 leaderboard and personal rank",
+    ],
   },
   home: {
     bestScore: "Best",

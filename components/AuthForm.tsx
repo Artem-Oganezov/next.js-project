@@ -1,13 +1,15 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import DinoSvg from "@/components/ui/DinoSvg";
+import GoogleIcon from "@/components/ui/GoogleIcon";
 import { gameMeta } from "@/game/meta";
 import { SKINS } from "@/game/skins";
 import { ApiError, api } from "@/lib/client/api";
+import { queryKeys } from "@/lib/client/query-keys";
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -25,15 +27,50 @@ type AuthFormProps = {
   onSuccess: (user: User) => void;
 };
 
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  email_taken: ui.auth.googleEmailTaken,
+  account_banned: ui.auth.accountBanned,
+  not_configured: ui.auth.googleNotConfigured,
+  invalid_state: ui.auth.googleSignInFailed,
+  token_exchange_failed: ui.auth.googleSignInFailed,
+  profile_invalid: ui.auth.googleSignInFailed,
+};
+
 function AuthGameTitle() {
   const accent = gameMeta.displayNameAccent;
   const base = gameMeta.displayName.replace(accent, "").trim();
 
   return (
-    <h1 className="auth-title">
+    <h2 className="auth-title">
       {base}
       <span className="game-title-accent">{accent}</span>
-    </h1>
+    </h2>
+  );
+}
+
+function GoogleOAuthSection({ mode }: { mode: Mode }) {
+  const { data: providers } = useQuery({
+    queryKey: queryKeys.authProviders,
+    queryFn: () => api.authProviders(),
+    staleTime: 60_000,
+  });
+
+  if (mode === "forgot" || !providers?.google) {
+    return null;
+  }
+
+  return (
+    <>
+      <a
+        href="/api/auth/google"
+        data-testid="auth-google-btn"
+        className="auth-oauth-btn"
+      >
+        <GoogleIcon />
+        {ui.auth.continueWithGoogle}
+      </a>
+      <div className="auth-divider">{ui.auth.orContinueWithEmail}</div>
+    </>
   );
 }
 
@@ -70,73 +107,76 @@ function LoginForm({
   const loading = isSubmitting || authMutation.isPending;
 
   return (
-    <form
-      onSubmit={handleSubmit((values) => {
-        setSubmitError(null);
-        authMutation.mutate(values);
-      })}
-      className="flex flex-col gap-1"
-      noValidate
-    >
-      <label className="field-label">
-        {ui.auth.username}
-        <input
-          type="text"
-          autoComplete="username"
-          disabled={loading}
-          data-testid="auth-username"
-          className="field-input"
-          {...register("username")}
-        />
-      </label>
-      {errors.username && (
-        <p className="alert-error" role="alert">
-          {errors.username.message}
-        </p>
-      )}
-
-      <label className="field-label">
-        {ui.auth.password}
-        <input
-          type="password"
-          autoComplete="current-password"
-          disabled={loading}
-          data-testid="auth-password"
-          className="field-input"
-          {...register("password")}
-        />
-      </label>
-      {errors.password && (
-        <p className="alert-error" role="alert">
-          {errors.password.message}
-        </p>
-      )}
-
-      <button
-        type="button"
-        onClick={onForgot}
-        disabled={loading}
-        data-testid="auth-forgot-password"
-        className="auth-switch p-0 text-left"
+    <>
+      <GoogleOAuthSection mode="login" />
+      <form
+        onSubmit={handleSubmit((values) => {
+          setSubmitError(null);
+          authMutation.mutate(values);
+        })}
+        className="flex flex-col gap-1"
+        noValidate
       >
-        {ui.auth.forgotPassword}
-      </button>
+        <label className="field-label">
+          {ui.auth.username}
+          <input
+            type="text"
+            autoComplete="username"
+            disabled={loading}
+            data-testid="auth-username"
+            className="field-input"
+            {...register("username")}
+          />
+        </label>
+        {errors.username && (
+          <p className="alert-error" role="alert">
+            {errors.username.message}
+          </p>
+        )}
 
-      {submitError && (
-        <p className="alert-error" role="alert">
-          {submitError}
-        </p>
-      )}
+        <label className="field-label">
+          {ui.auth.password}
+          <input
+            type="password"
+            autoComplete="current-password"
+            disabled={loading}
+            data-testid="auth-password"
+            className="field-input"
+            {...register("password")}
+          />
+        </label>
+        {errors.password && (
+          <p className="alert-error" role="alert">
+            {errors.password.message}
+          </p>
+        )}
 
-      <button
-        type="submit"
-        disabled={loading}
-        data-testid="auth-submit"
-        className="start-btn mt-3"
-      >
-        {loading ? ui.auth.wait : ui.auth.login}
-      </button>
-    </form>
+        <button
+          type="button"
+          onClick={onForgot}
+          disabled={loading}
+          data-testid="auth-forgot-password"
+          className="auth-switch p-0 text-left"
+        >
+          {ui.auth.forgotPassword}
+        </button>
+
+        {submitError && (
+          <p className="alert-error" role="alert">
+            {submitError}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          data-testid="auth-submit"
+          className="start-btn mt-3"
+        >
+          {loading ? ui.auth.wait : ui.auth.login}
+        </button>
+      </form>
+    </>
   );
 }
 
@@ -253,85 +293,104 @@ function RegisterForm({ onSuccess }: { onSuccess: (user: User) => void }) {
   const loading = isSubmitting || authMutation.isPending;
 
   return (
-    <form
-      onSubmit={handleSubmit((values) => {
-        setSubmitError(null);
-        authMutation.mutate(values);
-      })}
-      className="flex flex-col gap-1"
-      noValidate
-    >
-      <label className="field-label">
-        {ui.auth.username}
-        <input
-          type="text"
-          autoComplete="username"
-          disabled={loading}
-          data-testid="auth-username"
-          className="field-input"
-          {...register("username")}
-        />
-      </label>
-      {errors.username && (
-        <p className="alert-error" role="alert">
-          {errors.username.message}
-        </p>
-      )}
-
-      <label className="field-label">
-        Email
-        <input
-          type="email"
-          autoComplete="email"
-          disabled={loading}
-          data-testid="auth-email"
-          className="field-input"
-          {...register("email")}
-        />
-      </label>
-      {errors.email && (
-        <p className="alert-error" role="alert">
-          {errors.email.message}
-        </p>
-      )}
-
-      <label className="field-label">
-        {ui.auth.password}
-        <input
-          type="password"
-          autoComplete="new-password"
-          disabled={loading}
-          data-testid="auth-password"
-          className="field-input"
-          {...register("password")}
-        />
-      </label>
-      {errors.password && (
-        <p className="alert-error" role="alert">
-          {errors.password.message}
-        </p>
-      )}
-
-      {submitError && (
-        <p className="alert-error" role="alert">
-          {submitError}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading}
-        data-testid="auth-submit"
-        className="start-btn mt-3"
+    <>
+      <GoogleOAuthSection mode="register" />
+      <form
+        onSubmit={handleSubmit((values) => {
+          setSubmitError(null);
+          authMutation.mutate(values);
+        })}
+        className="flex flex-col gap-1"
+        noValidate
       >
-        {loading ? ui.auth.wait : ui.auth.register}
-      </button>
-    </form>
+        <label className="field-label">
+          {ui.auth.username}
+          <input
+            type="text"
+            autoComplete="username"
+            disabled={loading}
+            data-testid="auth-username"
+            className="field-input"
+            {...register("username")}
+          />
+        </label>
+        {errors.username && (
+          <p className="alert-error" role="alert">
+            {errors.username.message}
+          </p>
+        )}
+
+        <label className="field-label">
+          Email
+          <input
+            type="email"
+            autoComplete="email"
+            disabled={loading}
+            data-testid="auth-email"
+            className="field-input"
+            {...register("email")}
+          />
+        </label>
+        {errors.email && (
+          <p className="alert-error" role="alert">
+            {errors.email.message}
+          </p>
+        )}
+
+        <label className="field-label">
+          {ui.auth.password}
+          <input
+            type="password"
+            autoComplete="new-password"
+            disabled={loading}
+            data-testid="auth-password"
+            className="field-input"
+            {...register("password")}
+          />
+        </label>
+        {errors.password && (
+          <p className="alert-error" role="alert">
+            {errors.password.message}
+          </p>
+        )}
+
+        {submitError && (
+          <p className="alert-error" role="alert">
+            {submitError}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          data-testid="auth-submit"
+          className="start-btn mt-3"
+        >
+          {loading ? ui.auth.wait : ui.auth.register}
+        </button>
+      </form>
+    </>
   );
 }
 
 export default function AuthForm({ onSuccess }: AuthFormProps) {
   const [mode, setMode] = useState<Mode>("login");
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authError = params.get("auth_error");
+    if (!authError) {
+      return;
+    }
+
+    setOauthError(AUTH_ERROR_MESSAGES[authError] ?? ui.auth.googleSignInFailed);
+    params.delete("auth_error");
+    const nextUrl = params.toString()
+      ? `${window.location.pathname}?${params.toString()}`
+      : window.location.pathname;
+    window.history.replaceState({}, "", nextUrl);
+  }, []);
 
   const subtitle =
     mode === "register"
@@ -351,6 +410,12 @@ export default function AuthForm({ onSuccess }: AuthFormProps) {
       <div className="auth-card">
         <AuthGameTitle />
         <p className="auth-subtitle">{subtitle}</p>
+
+        {oauthError && (
+          <p className="alert-error auth-oauth-error" role="alert">
+            {oauthError}
+          </p>
+        )}
 
         {mode === "register" && <RegisterForm onSuccess={onSuccess} />}
         {mode === "login" && (

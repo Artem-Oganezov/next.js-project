@@ -13,26 +13,19 @@ type Submission = {
   createdAt: string;
 };
 
-const SECRET_STORAGE_KEY = "dino-admin-secret";
-
 export default function AdminPage() {
-  const [secret, setSecret] = useState("");
-  const [storedSecret, setStoredSecret] = useState<string | null>(null);
+  const [secretInput, setSecretInput] = useState("");
+  const [activeSecret, setActiveSecret] = useState<string | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const saved = sessionStorage.getItem(SECRET_STORAGE_KEY);
-    if (saved) {
-      setStoredSecret(saved);
-    }
-  }, []);
-
   const adminFetch = useCallback(
     async (path: string, init?: RequestInit) => {
-      const activeSecret = storedSecret ?? secret;
+      if (!activeSecret) {
+        throw new Error("Admin secret is not set");
+      }
       const response = await fetch(path, {
         ...init,
         headers: {
@@ -47,7 +40,7 @@ export default function AdminPage() {
       }
       return response;
     },
-    [secret, storedSecret],
+    [activeSecret],
   );
 
   const loadSubmissions = useCallback(async () => {
@@ -65,26 +58,24 @@ export default function AdminPage() {
   }, [adminFetch]);
 
   useEffect(() => {
-    if (storedSecret) {
+    if (activeSecret) {
       void loadSubmissions();
     }
-  }, [storedSecret, loadSubmissions]);
+  }, [activeSecret, loadSubmissions]);
 
   const handleUnlockSecret = () => {
-    if (secret.length < 32) {
+    if (secretInput.length < 32) {
       setError("Secret must be at least 32 characters");
       return;
     }
-    sessionStorage.setItem(SECRET_STORAGE_KEY, secret);
-    setStoredSecret(secret);
+    setActiveSecret(secretInput);
     setError(null);
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem(SECRET_STORAGE_KEY);
-    setStoredSecret(null);
+    setActiveSecret(null);
     setSubmissions([]);
-    setSecret("");
+    setSecretInput("");
   };
 
   const handleBan = async (userId: string, username: string) => {
@@ -102,19 +93,20 @@ export default function AdminPage() {
     }
   };
 
-  if (!storedSecret) {
+  if (!activeSecret) {
     return (
       <main className="mx-auto max-w-md p-6 space-y-4">
         <h1 className="text-xl font-bold text-[#535353]">Admin</h1>
         <p className="text-sm text-[#737373]">
           Enter <code className="text-xs">ADMIN_SECRET</code> from the server environment.
+          The secret stays in memory only for this tab session.
         </p>
         <label className="flex flex-col gap-1 text-sm text-[#535353]">
           Admin secret
           <input
             type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
+            value={secretInput}
+            onChange={(e) => setSecretInput(e.target.value)}
             data-testid="admin-secret-input"
             className="px-3 py-2 border border-[#d0d0d0] rounded-sm"
           />

@@ -12,7 +12,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { getEnv } from "@/lib/env";
 import { Session } from "@/lib/models/Session";
 import { User, type IUser } from "@/lib/models/User";
-import type { User as PublicUser } from "@/types/user";
+import { toSessionUser, type SessionUser, type User as PublicUser } from "@/types/user";
 
 export const SESSION_COOKIE_NAME = "game_session";
 
@@ -22,6 +22,7 @@ export function toPublicUser(user: IUser): PublicUser {
     username: user.username,
     email: user.email,
     emailVerified: user.emailVerified,
+    authProvider: user.authProvider ?? "local",
     bestScore: user.bestScore,
     totalScore: user.totalScore,
     unlockedSkins: user.unlockedSkins,
@@ -81,7 +82,20 @@ export async function createSession(userId: string | Types.ObjectId): Promise<vo
   });
 }
 
-export async function getSessionUser(): Promise<PublicUser | null> {
+export async function getSessionUser(): Promise<SessionUser | null> {
+  const sessionUser = await resolveSessionUser({ writeCache: true });
+  return sessionUser;
+}
+
+/** Lighter auth for high-frequency poll endpoints — returns userId only. */
+export async function getSessionUserId(): Promise<string | null> {
+  const sessionUser = await resolveSessionUser({ writeCache: false });
+  return sessionUser?.id ?? null;
+}
+
+async function resolveSessionUser(options: {
+  writeCache: boolean;
+}): Promise<SessionUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
@@ -120,8 +134,10 @@ export async function getSessionUser(): Promise<PublicUser | null> {
   }
 
   const publicUser = toPublicUser(user);
-  await setCachedSessionUser(tokenHash, publicUser);
-  return publicUser;
+  if (options.writeCache) {
+    await setCachedSessionUser(tokenHash, publicUser);
+  }
+  return toSessionUser(publicUser);
 }
 
 /** Push fresh User fields into every active session cache entry for this user. */

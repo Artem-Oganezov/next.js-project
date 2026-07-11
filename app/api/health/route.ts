@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { withApiHandler } from "@/lib/api/handler";
 import { APP_VERSION } from "@/lib/config/version";
 import { connectDB } from "@/lib/db/mongoose";
-import { getCounter } from "@/lib/observability/metrics";
 import { getRedis } from "@/lib/redis";
 
 async function checkMongo(): Promise<boolean> {
@@ -36,11 +35,6 @@ export const GET = withApiHandler("health", async () => {
       mongo: mongoOk ? "connected" : "disconnected",
       redis: redisOk ? "connected" : "disconnected",
       timestamp: new Date().toISOString(),
-      observability: {
-        antiCheatRejections: getCounter("anti_cheat_rejections_total"),
-        httpRequests: getCounter("http_requests_total"),
-        metricsPath: "/api/metrics",
-      },
     },
     { status: ok ? 200 : 503 },
   );

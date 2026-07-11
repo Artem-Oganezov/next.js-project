@@ -1,8 +1,8 @@
 import { ApiError, api } from "@/lib/client/api";
-import type { User } from "@/types/user";
+import type { SessionUser } from "@/types/user";
 
 /** Returns null when unauthenticated (401), throws on other errors. */
-export async function fetchSessionUser(): Promise<User | null> {
+export async function fetchSessionUser(): Promise<SessionUser | null> {
   try {
     const data = await api.me();
     return data.user;

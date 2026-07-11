@@ -13,7 +13,8 @@ import { GameSession } from "@/lib/models/GameSession";
 import { recordSuspiciousSubmit } from "@/lib/security/anti-cheat";
 import { AntiCheatReason } from "@/lib/security/anti-cheat-reasons";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
-import { enqueueScoreJob } from "@/lib/queue/score-queue";
+import { enqueueScoreJob, getScoreJobIdForSession } from "@/lib/queue/score-queue";
+import { releaseGameSessionPending } from "@/lib/game/session-claim";
 import { scoreBodySchema } from "@/lib/validation/score";
 import { msg } from "@/lib/i18n/messages";
 
@@ -77,18 +78,50 @@ export const POST = withApiHandler(
         return forbidden(msg.game.alreadySubmitted);
       }
 
-      const { jobId } = await enqueueScoreJob({
-        userId: sessionUser.id,
-        username: sessionUser.username,
-        score,
-        sessionId,
-        inputLog,
-      });
+      if (gameSession.submitPending) {
+        const existingJobId = await getScoreJobIdForSession(sessionId);
+        if (existingJobId) {
+          return NextResponse.json(
+            { jobId: existingJobId, status: "pending" as const },
+            { status: 202 },
+          );
+        }
+        return forbidden(msg.game.alreadySubmitted);
+      }
 
-      return NextResponse.json(
-        { jobId, status: "pending" as const },
-        { status: 202 },
+      const pendingSession = await GameSession.findOneAndUpdate(
+        {
+          _id: sessionId,
+          userId: sessionUser.id,
+          scoreSubmitted: false,
+          submitPending: { $ne: true },
+        },
+        { $set: { submitPending: true } },
       );
+      if (!pendingSession) {
+        return forbidden(msg.game.alreadySubmitted);
+      }
+
+      try {
+        const { jobId } = await enqueueScoreJob({
+          userId: sessionUser.id,
+          username: sessionUser.username,
+          score,
+          sessionId,
+          inputLog,
+          sessionSeed: pendingSession.seed,
+          sessionStartedAt: pendingSession.startedAt.toISOString(),
+          sessionReviveUsed: pendingSession.reviveUsed,
+        });
+
+        return NextResponse.json(
+          { jobId, status: "pending" as const },
+          { status: 202 },
+        );
+      } catch (error) {
+        await releaseGameSessionPending(sessionId);
+        throw error;
+      }
     }
 
     const outcome = await processScoreSubmission({

@@ -1,6 +1,6 @@
 import { SESSION_CACHE_TTL_SEC, SESSION_MAX_AGE_SEC } from "@/lib/config/app";
 import { getRedis } from "@/lib/redis";
-import type { User as PublicUser } from "@/types/user";
+import { toSessionUser, type SessionUser, type User as PublicUser } from "@/types/user";
 
 const SESSION_KEY_PREFIX = "auth:sess:";
 const BANNED_KEY_PREFIX = "auth:banned:";
@@ -15,13 +15,13 @@ function bannedKey(userId: string): string {
 
 export async function getCachedSessionUser(
   tokenHash: string,
-): Promise<PublicUser | null> {
+): Promise<SessionUser | null> {
   try {
     const redis = getRedis();
     const raw = await redis.get(sessionKey(tokenHash));
     if (!raw) return null;
 
-    const user = JSON.parse(raw) as PublicUser;
+    const user = JSON.parse(raw) as SessionUser;
     const banned = await redis.get(bannedKey(user.id));
     if (banned) {
       await redis.del(sessionKey(tokenHash));
@@ -42,7 +42,7 @@ export async function setCachedSessionUser(
     const redis = getRedis();
     await redis.setEx(
       sessionKey(tokenHash),
-      JSON.stringify(user),
+      JSON.stringify(toSessionUser(user)),
       SESSION_CACHE_TTL_SEC,
     );
   } catch {

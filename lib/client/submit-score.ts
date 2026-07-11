@@ -8,13 +8,20 @@ export type ScoreSubmitResult = {
   nextUsername: string | null;
 };
 
-const SCORE_POLL_INTERVAL_MS = 500;
 const SCORE_POLL_MAX_ATTEMPTS = 120;
+
+/** Backoff polling: fast first checks, then wider gaps to cut HTTP load under queue pressure. */
+export function scorePollDelayMs(attempt: number): number {
+  if (attempt <= 1) return 500;
+  if (attempt <= 3) return 800;
+  if (attempt <= 6) return 1200;
+  return 1500;
+}
 
 async function pollScoreJob(jobId: string): Promise<ScoreSubmitResult> {
   for (let attempt = 0; attempt < SCORE_POLL_MAX_ATTEMPTS; attempt++) {
     if (attempt > 0) {
-      await new Promise((resolve) => setTimeout(resolve, SCORE_POLL_INTERVAL_MS));
+      await new Promise((resolve) => setTimeout(resolve, scorePollDelayMs(attempt)));
     }
 
     const response = await fetch(`/api/game/score/status/${jobId}`, {

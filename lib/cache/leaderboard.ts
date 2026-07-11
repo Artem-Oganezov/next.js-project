@@ -26,8 +26,7 @@ async function getLeaderboardCacheGeneration(): Promise<number> {
 /** Bump generation so stale top-10 payloads on any node are ignored. */
 export async function bumpLeaderboardCacheGeneration(): Promise<void> {
   try {
-    await getRedis().incr(TOP10_GEN_KEY);
-    await getRedis().del(TOP10_KEY);
+    await getRedis().pipeline().incr(TOP10_GEN_KEY).del(TOP10_KEY).exec();
   } catch {
     // Mongo remains authoritative; cache simply misses until repopulated.
   }
@@ -124,11 +123,17 @@ export async function rankFromCache(
   const redis = getRedis();
   const key = toLeaderboardKey(bestScore, order);
 
-  await redis.zadd(SCORES_KEY, [{ score: key, member: username }]);
+  const [, higherCount, nextMembers] = await redis
+    .pipeline()
+    .zadd(SCORES_KEY, [{ score: key, member: username }])
+    .zcountAbove(SCORES_KEY, key)
+    .zfirstAbove(SCORES_KEY, key)
+    .exec();
 
-  const higherCount = await redis.zcountAbove(SCORES_KEY, key);
-  const nextUsername =
-    higherCount > 0 ? await redis.zfirstAbove(SCORES_KEY, key) : null;
+  const higher = Number(higherCount);
+  const members = nextMembers as string[] | string | null | undefined;
+  const nextMember = Array.isArray(members) ? members[0] : members;
+  const nextUsername = higher > 0 ? (nextMember ?? null) : null;
 
-  return { rank: higherCount + 1, nextUsername };
+  return { rank: higher + 1, nextUsername };
 }

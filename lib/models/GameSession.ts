@@ -8,6 +8,8 @@ export interface IGameSession extends Document {
   startedAt: Date;
   /** One-time run: submit atomically sets this flag to true. */
   scoreSubmitted: boolean;
+  /** Async enqueue holds the session until the worker claims or rolls back. */
+  submitPending: boolean;
   /** Player used revive (ad) — at most once per session. */
   reviveUsed: boolean;
   expiresAt: Date;
@@ -29,6 +31,10 @@ const gameSessionSchema = new Schema<IGameSession>({
     required: true,
   },
   scoreSubmitted: {
+    type: Boolean,
+    default: false,
+  },
+  submitPending: {
     type: Boolean,
     default: false,
   },

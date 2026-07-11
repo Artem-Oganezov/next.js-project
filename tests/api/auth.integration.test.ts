@@ -1,5 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { connectDB } from "@/lib/db/mongoose";
+import { gamePlugin } from "@/lib/game/plugin";
+import { maxPlausibleScore } from "@/lib/game/score-rules";
 import { GameSession } from "@/lib/models/GameSession";
 import { playHonestGame } from "../helpers/replay";
 import { jsonRequest, parseJsonResponse } from "../helpers/request";
@@ -135,12 +137,12 @@ describe("Auth API", () => {
 
     const response = await meGet();
     const { status, body } = await parseJsonResponse<{
-      user: { username: string; email: string };
+      user: { username: string; email?: string };
     }>(response);
 
     expect(status).toBe(200);
     expect(body.user.username).toBe("session_user");
-    expect(body.user.email).toBe("session@example.com");
+    expect(body.user.email).toBeUndefined();
   });
 
   it("POST /api/auth/login rejects wrong password with 401", async () => {
@@ -291,14 +293,16 @@ describe("Game score API", () => {
         password: "password12",
       }),
     );
-    const { sessionId, seed } = await startGameSession();
-    const run = playHonestGame(seed, 0);
+    const run = await playAndBackdate(80);
+    const ceiling1s = maxPlausibleScore(1000, gamePlugin.scoreRules);
+    expect(run.score).toBeGreaterThan(ceiling1s);
+    await backdateGameSession(run.sessionId, 1);
 
     const response = await scorePost(
       jsonRequest("http://localhost/api/game/score", "POST", {
         score: run.score,
-        sessionId,
-        inputLog: run.jumpTicks,
+        sessionId: run.sessionId,
+        inputLog: run.inputLog,
       }),
     );
     const { status, body } = await parseJsonResponse<{ message: string }>(response);
@@ -393,7 +397,7 @@ describe("Game score API", () => {
     expect(meBody.status).toBe(200);
     expect(meBody.body.user.bestScore).toBe(runC.score);
     expect(meBody.body.user.totalScore).toBe(runA.score + runB.score + runC.score);
-  });
+  }, 60_000);
 
   it("GET /api/auth/me reflects fresh scores after each submit (session cache)", async () => {
     await registerPost(

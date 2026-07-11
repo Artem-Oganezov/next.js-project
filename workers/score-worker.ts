@@ -20,7 +20,7 @@ void (async () => {
   const { getRedis, resetRedisCache } = await import("@/lib/redis");
   for (let attempt = 0; attempt < 10; attempt++) {
     try {
-      resetRedisCache();
+      await resetRedisCache();
       await getRedis().ping();
       break;
     } catch {

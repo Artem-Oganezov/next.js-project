@@ -19,10 +19,12 @@ import {
   type DeleteAccountInput,
 } from "@/lib/validation/auth";
 import { ui } from "@/lib/i18n/ui";
+import type { AuthProvider } from "@/types/user";
 
 type ProfileScreenProps = {
   username: string;
   emailVerified: boolean;
+  authProvider: AuthProvider;
   bestScore: number;
   totalScore?: number;
   unlockedSkins?: string[];
@@ -40,6 +42,7 @@ type ProfileScreenProps = {
 export default function ProfileScreen({
   username,
   emailVerified,
+  authProvider,
   bestScore,
   totalScore: totalScoreProp,
   unlockedSkins: unlockedSkinsProp,
@@ -120,8 +123,11 @@ export default function ProfileScreen({
     },
   });
 
+  const isGoogleAccount = authProvider === "google";
+
   const deleteAccountMutation = useMutation({
-    mutationFn: (values: DeleteAccountInput) => api.deleteAccount(values),
+    mutationFn: (values: DeleteAccountInput) =>
+      api.deleteAccount(isGoogleAccount ? {} : values),
     onSuccess: () => {
       setAccountError(null);
       setAccountMessage(ui.auth.accountDeleted);
@@ -243,76 +249,95 @@ export default function ProfileScreen({
             </p>
           )}
 
-          <form
-            onSubmit={passwordForm.handleSubmit((values) =>
-              changePasswordMutation.mutate(values),
-            )}
-          >
-            <p className="account-panel-title">{ui.auth.changePassword}</p>
-            <input
-              type="password"
-              placeholder={ui.auth.currentPassword}
-              disabled={accountBusy}
-              className="field-input"
-              {...passwordForm.register("currentPassword")}
-            />
-            {passwordForm.formState.errors.currentPassword && (
-              <p className="alert-error" role="alert">
-                {passwordForm.formState.errors.currentPassword.message}
-              </p>
-            )}
-            <input
-              type="password"
-              placeholder={ui.auth.newPassword}
-              disabled={accountBusy}
-              className="field-input"
-              {...passwordForm.register("newPassword")}
-            />
-            {passwordForm.formState.errors.newPassword && (
-              <p className="alert-error" role="alert">
-                {passwordForm.formState.errors.newPassword.message}
-              </p>
-            )}
-            <button
-              type="submit"
-              disabled={accountBusy || !passwordForm.formState.isValid}
-              className="start-btn start-btn-compact"
+          {!isGoogleAccount && (
+            <form
+              onSubmit={passwordForm.handleSubmit((values) =>
+                changePasswordMutation.mutate(values),
+              )}
             >
-              {ui.auth.changePassword}
-            </button>
-          </form>
+              <p className="account-panel-title">{ui.auth.changePassword}</p>
+              <input
+                type="password"
+                placeholder={ui.auth.currentPassword}
+                disabled={accountBusy}
+                className="field-input"
+                {...passwordForm.register("currentPassword")}
+              />
+              {passwordForm.formState.errors.currentPassword && (
+                <p className="alert-error" role="alert">
+                  {passwordForm.formState.errors.currentPassword.message}
+                </p>
+              )}
+              <input
+                type="password"
+                placeholder={ui.auth.newPassword}
+                disabled={accountBusy}
+                className="field-input"
+                {...passwordForm.register("newPassword")}
+              />
+              {passwordForm.formState.errors.newPassword && (
+                <p className="alert-error" role="alert">
+                  {passwordForm.formState.errors.newPassword.message}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={accountBusy || !passwordForm.formState.isValid}
+                className="start-btn start-btn-compact"
+              >
+                {ui.auth.changePassword}
+              </button>
+            </form>
+          )}
         </div>
 
         <div className="account-panel">
-          <form
-            onSubmit={deleteForm.handleSubmit((values) =>
-              deleteAccountMutation.mutate(values),
-            )}
-          >
-            <p className="account-panel-title account-panel-title-danger">
-              {ui.auth.deleteAccount}
-            </p>
-            <p className="field-hint">{ui.auth.deleteConfirm}</p>
-            <input
-              type="password"
-              placeholder={ui.auth.password}
-              disabled={accountBusy}
-              className="field-input"
-              {...deleteForm.register("password")}
-            />
-            {deleteForm.formState.errors.password && (
-              <p className="alert-error" role="alert">
-                {deleteForm.formState.errors.password.message}
+          {isGoogleAccount ? (
+            <>
+              <p className="account-panel-title account-panel-title-danger">
+                {ui.auth.deleteAccount}
               </p>
-            )}
-            <button
-              type="submit"
-              disabled={accountBusy || !deleteForm.formState.isValid}
-              className="pbtn pbtn-secondary pbtn-danger"
+              <p className="field-hint">{ui.auth.deleteConfirmOAuth}</p>
+              <button
+                type="button"
+                disabled={accountBusy}
+                onClick={() => deleteAccountMutation.mutate({})}
+                className="pbtn pbtn-secondary pbtn-danger"
+              >
+                {ui.auth.deleteAccount}
+              </button>
+            </>
+          ) : (
+            <form
+              onSubmit={deleteForm.handleSubmit((values) =>
+                deleteAccountMutation.mutate(values),
+              )}
             >
-              {ui.auth.deleteAccount}
-            </button>
-          </form>
+              <p className="account-panel-title account-panel-title-danger">
+                {ui.auth.deleteAccount}
+              </p>
+              <p className="field-hint">{ui.auth.deleteConfirm}</p>
+              <input
+                type="password"
+                placeholder={ui.auth.password}
+                disabled={accountBusy}
+                className="field-input"
+                {...deleteForm.register("password")}
+              />
+              {deleteForm.formState.errors.password && (
+                <p className="alert-error" role="alert">
+                  {deleteForm.formState.errors.password.message}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={accountBusy || !deleteForm.formState.isValid}
+                className="pbtn pbtn-secondary pbtn-danger"
+              >
+                {ui.auth.deleteAccount}
+              </button>
+            </form>
+          )}
         </div>
       </details>
 

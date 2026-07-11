@@ -4,7 +4,8 @@ import { resetEnvCache } from "@/lib/env";
 import { GameSession } from "@/lib/models/GameSession";
 import { playHonestGame } from "../helpers/replay";
 import { jsonRequest, parseJsonResponse } from "../helpers/request";
-import { clearTestCookies, isRedisAvailable } from "../redis.setup";
+import { clearTestCookies } from "../helpers/test-infra";
+import { isRedisAvailable } from "../redis.setup";
 
 const describeRedis = isRedisAvailable() ? describe : describe.skip;
 
@@ -146,6 +147,12 @@ describeRedis("Async score API", () => {
     expect(submitResponse.status).toBe(202);
     const { jobId } = (await submitResponse.json()) as { jobId: string };
 
+    await connectDB();
+    await GameSession.updateOne(
+      { _id: sessionId },
+      { $set: { scoreSubmitted: true } },
+    );
+
     const { getRedis } = await import("@/lib/redis");
     const redis = getRedis();
     const staleStartedAt = new Date(Date.now() - 6 * 60 * 1000).toISOString();
@@ -172,5 +179,69 @@ describeRedis("Async score API", () => {
     expect(status).toBe(200);
     expect(body.status).toBe("failed");
     expect(body.message).toContain("timed out");
+
+    const session = await GameSession.findById(sessionId);
+    expect(session?.scoreSubmitted).toBe(false);
+  });
+
+  it("does not delete a pending async session when a new run starts", async () => {
+    await login();
+
+    const sessionResponse = await sessionStartPost(
+      jsonRequest("http://localhost/api/game/session/start", "POST", {}),
+    );
+    const sessionBody = (await sessionResponse.json()) as {
+      sessionId: string;
+      seed: string;
+    };
+    const run = playHonestGame(sessionBody.seed, 40);
+    await connectDB();
+    await GameSession.updateOne(
+      { _id: sessionBody.sessionId },
+      { startedAt: new Date(Date.now() - (Math.ceil(run.ticks / 60) + 5) * 1000) },
+    );
+
+    const submitResponse = await scorePost(
+      jsonRequest("http://localhost/api/game/score", "POST", {
+        sessionId: sessionBody.sessionId,
+        score: run.score,
+        inputLog: run.jumpTicks,
+      }),
+    );
+    expect(submitResponse.status).toBe(202);
+    const { jobId } = (await submitResponse.json()) as { jobId: string };
+    expect(jobId).toBeTruthy();
+
+    const pendingBefore = await GameSession.findById(sessionBody.sessionId);
+    expect(pendingBefore?.submitPending).toBe(true);
+
+    const nextSessionResponse = await sessionStartPost(
+      jsonRequest("http://localhost/api/game/session/start", "POST", {}),
+    );
+    const nextSession = (await nextSessionResponse.json()) as { sessionId: string };
+    expect(nextSession.sessionId).not.toBe(sessionBody.sessionId);
+
+    const pendingAfter = await GameSession.findById(sessionBody.sessionId);
+    expect(pendingAfter).not.toBeNull();
+
+    const { drainScoreQueueOnce } = await import("@/lib/queue/score-worker");
+    expect(await drainScoreQueueOnce()).toBe(true);
+
+    const completedStatus = await scoreStatusGet(
+      jsonRequest(`http://localhost/api/game/score/status/${jobId}`, "GET"),
+      { params: Promise.resolve({ jobId }) },
+    );
+    const { status, body } = await parseJsonResponse<{
+      status: string;
+      bestScore: number;
+    }>(completedStatus);
+
+    expect(status).toBe(200);
+    expect(body.status).toBe("completed");
+    expect(body.bestScore).toBeGreaterThanOrEqual(run.score);
+
+    const completedSession = await GameSession.findById(sessionBody.sessionId);
+    expect(completedSession?.scoreSubmitted).toBe(true);
+    expect(completedSession?.submitPending).toBe(false);
   });
 });

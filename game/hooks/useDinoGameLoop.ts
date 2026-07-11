@@ -11,7 +11,6 @@ import {
 } from "@/game/canvas-draw";
 import { GAME_CONFIG } from "@/game/constants";
 import { createDinoEngine, TICKS_PER_SECOND, type DinoEngine } from "@/game/engine";
-import type { GameSounds } from "@/game/sounds";
 
 const { CANVAS_WIDTH, CANVAS_HEIGHT, GROUND_Y, DINO_X, DINO_WIDTH, DINO_HEIGHT } =
   GAME_CONFIG;
@@ -32,7 +31,6 @@ export type DinoGameLoopRefs = {
 export type UseDinoGameLoopOptions = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   activeSkinColorRef: RefObject<string>;
-  soundsRef: RefObject<GameSounds | null>;
   onScoreChange: (score: number) => void;
   onReviveOffer: () => void;
   onSetGameOver: (gameOver: boolean) => void;
@@ -56,7 +54,6 @@ export function useDinoGameLoop(
   const {
     canvasRef,
     activeSkinColorRef,
-    soundsRef,
     onScoreChange,
     onReviveOffer,
     onSetGameOver,
@@ -188,7 +185,6 @@ export function useDinoGameLoop(
       void api
         .submitScore(displayScore, gameSessionId, inputLog, onScoreSaving)
         .then((data) => {
-          soundsRef.current?.playSave();
           onHighScoreChange(data.bestScore);
           onScoreSaved({ bestScore: data.bestScore, totalScore: data.totalScore });
           onRankInfo(data.rank, data.nextUsername);
@@ -254,7 +250,6 @@ export function useDinoGameLoop(
         if (!pausedForReviveOffer && !hasRevived) {
           pausedForReviveOffer = true;
           reviveAtTick = engine.getTick();
-          soundsRef.current?.playCrash();
           onCrash();
           onReviveOffer();
           return;
@@ -275,7 +270,6 @@ export function useDinoGameLoop(
         pendingJump = false;
         if (jumpRequested) {
           jumpTicks.push(engine.getTick());
-          soundsRef.current?.playJump();
         }
         engine.tick(jumpRequested);
       }
@@ -326,7 +320,6 @@ export function useDinoGameLoop(
     };
 
     const handleJumpInput = () => {
-      soundsRef.current?.resume();
       if (engine?.isGameOver()) {
         if (pausedForReviveOffer) return;
         resetGame();

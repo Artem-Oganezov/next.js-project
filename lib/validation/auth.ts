@@ -39,7 +39,7 @@ export const changePasswordSchema = z.object({
 });
 
 export const deleteAccountSchema = z.object({
-  password: passwordField,
+  password: passwordField.optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

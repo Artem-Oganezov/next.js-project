@@ -63,6 +63,17 @@ export function validateGameScore(
     };
   }
 
+  if (options?.replayTicks !== undefined) {
+    const replayElapsedMs = (options.replayTicks / TICKS_PER_SECOND) * 1000;
+    if (submittedScore > maxPlausibleScore(replayElapsedMs, config)) {
+      return {
+        ok: false,
+        code: AntiCheatReason.SCORE_CEILING,
+        message: "Score too high for this run",
+      };
+    }
+  }
+
   const minTicks = minRunTicks(config);
   const ticksOk =
     options?.replayTicks !== undefined && options.replayTicks >= minTicks;

@@ -1,5 +1,6 @@
 # Local development: Mongo + Redis without app.
-# npm run dev + MONGODB_URI=mongodb://127.0.0.1:27017/game REDIS_URL=redis://127.0.0.1:6379
+# Tests: npm test / npm run test:redis (DB game-test)
+# Dev: MONGODB_URI=mongodb://127.0.0.1:27017/game in .env.local
 services:
   mongo:
     image: mongo:7
@@ -7,6 +8,11 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
   redis:
@@ -15,6 +21,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
 
 volumes:

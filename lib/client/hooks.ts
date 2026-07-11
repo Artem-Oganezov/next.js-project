@@ -5,7 +5,7 @@ import { SKINS } from "@/game/skins";
 import { ApiError, api } from "@/lib/client/api";
 import { queryKeys } from "@/lib/client/query-keys";
 import { fetchSessionUser } from "@/lib/client/session-query";
-import type { User } from "@/types/user";
+import type { SessionUser, User } from "@/types/user";
 
 export function useSessionQuery() {
   return useQuery({
@@ -38,7 +38,7 @@ export function useLogoutMutation() {
   return useMutation({
     mutationFn: () => api.logout(),
     onSuccess: () => {
-      queryClient.setQueryData<User | null>(queryKeys.session, null);
+      queryClient.setQueryData<SessionUser | null>(queryKeys.session, null);
     },
   });
 }
@@ -47,7 +47,7 @@ export function useSkinMutations(onUserUpdate?: (patch: Partial<User>) => void) 
   const queryClient = useQueryClient();
 
   const patchSession = (patch: Partial<User>) => {
-    queryClient.setQueryData<User | null>(queryKeys.session, (prev) =>
+    queryClient.setQueryData<SessionUser | null>(queryKeys.session, (prev) =>
       prev ? { ...prev, ...patch } : prev,
     );
     onUserUpdate?.(patch);
@@ -57,7 +57,7 @@ export function useSkinMutations(onUserUpdate?: (patch: Partial<User>) => void) 
     mutationFn: (skinId: string) => api.equipSkin(skinId),
     onMutate: async (skinId) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.session });
-      const previous = queryClient.getQueryData<User | null>(queryKeys.session);
+      const previous = queryClient.getQueryData<SessionUser | null>(queryKeys.session);
       patchSession({ activeSkin: skinId });
       return { previous };
     },
@@ -75,7 +75,7 @@ export function useSkinMutations(onUserUpdate?: (patch: Partial<User>) => void) 
     mutationFn: (skinId: string) => api.unlockSkin(skinId),
     onMutate: async (skinId) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.session });
-      const previous = queryClient.getQueryData<User | null>(queryKeys.session);
+      const previous = queryClient.getQueryData<SessionUser | null>(queryKeys.session);
       const skin = SKINS.find((item) => item.id === skinId);
       if (previous && skin) {
         patchSession({

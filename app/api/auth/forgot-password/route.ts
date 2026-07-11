@@ -28,7 +28,7 @@ export const POST = withApiHandler(
     await connectDB();
 
     const user = await User.findOne({ email: parsed.data.email });
-    if (user) {
+    if (user?.passwordHash) {
       try {
         await sendPasswordResetEmail(user._id.toString(), user.email);
       } catch (error) {

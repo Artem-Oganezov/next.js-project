@@ -33,7 +33,8 @@ export async function apiFetch<T>(
 }
 
 export const api = {
-  me: () => apiFetch<{ user: import("@/types/user").User }>("/api/auth/me"),
+  me: () => apiFetch<{ user: import("@/types/user").SessionUser }>("/api/auth/me"),
+  authProviders: () => apiFetch<{ google: boolean }>("/api/auth/providers"),
   login: (body: { username: string; password: string }) =>
     apiFetch<{ user: import("@/types/user").User }>("/api/auth/login", {
       method: "POST",
@@ -59,7 +60,7 @@ export const api = {
     apiFetch<{ ok: boolean }>("/api/auth/resend-verification", { method: "POST" }),
   changePassword: (body: { currentPassword: string; newPassword: string }) =>
     apiFetch<{ ok: boolean }>("/api/auth/password", { method: "PUT", json: body }),
-  deleteAccount: (body: { password: string }) =>
+  deleteAccount: (body: { password?: string }) =>
     apiFetch<{ ok: boolean }>("/api/auth/account", { method: "DELETE", json: body }),
   startGameSession: () =>
     apiFetch<{ sessionId: string; seed: string; startedAt: string }>(

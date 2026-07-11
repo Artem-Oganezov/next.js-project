@@ -12,7 +12,7 @@ import { Game, SKINS } from "@/game";
 import { useLogoutMutation, useSessionQuery } from "@/lib/client/hooks";
 import { queryKeys } from "@/lib/client/query-keys";
 import { ui } from "@/lib/i18n/ui";
-import type { User } from "@/types/user";
+import { toSessionUser, type SessionUser, type User } from "@/types/user";
 
 type AppScreen = "home" | "leaderboard" | "profile" | "game";
 
@@ -33,7 +33,7 @@ export default function AuthGate() {
   const logoutMutation = useLogoutMutation();
 
   const handleAuthSuccess = (nextUser: User) => {
-    queryClient.setQueryData(queryKeys.session, nextUser);
+    queryClient.setQueryData(queryKeys.session, toSessionUser(nextUser));
     setScreen("home");
   };
 
@@ -49,8 +49,8 @@ export default function AuthGate() {
     void queryClient.invalidateQueries({ queryKey: queryKeys.session });
   };
 
-  const patchUser = (patch: Partial<User>) => {
-    queryClient.setQueryData<User | null>(queryKeys.session, (prev) =>
+  const patchUser = (patch: Partial<SessionUser>) => {
+    queryClient.setQueryData<SessionUser | null>(queryKeys.session, (prev) =>
       prev ? { ...prev, ...patch } : prev,
     );
   };
@@ -144,6 +144,7 @@ export default function AuthGate() {
           <ProfileScreen
             username={user.username}
             emailVerified={user.emailVerified}
+            authProvider={user.authProvider}
             bestScore={user.bestScore}
             totalScore={user.totalScore}
             unlockedSkins={user.unlockedSkins}

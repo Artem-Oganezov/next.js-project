@@ -36,9 +36,14 @@ export const DELETE = withApiHandler(
       return unauthorized();
     }
 
-    const valid = await verifyLoginPassword(parsed.data.password, user.passwordHash);
-    if (!valid) {
-      return unauthorized("Password is incorrect");
+    if (user.passwordHash) {
+      if (!parsed.data.password) {
+        return badRequest(msg.auth.passwordWrong);
+      }
+      const valid = await verifyLoginPassword(parsed.data.password, user.passwordHash);
+      if (!valid) {
+        return unauthorized(msg.auth.passwordWrong);
+      }
     }
 
     await deleteUserAccount(sessionUser.id);

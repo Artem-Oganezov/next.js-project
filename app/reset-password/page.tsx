@@ -7,6 +7,10 @@ import { ui } from "@/lib/i18n/ui";
 
 export const metadata: Metadata = {
   title: `${ui.auth.resetPasswordTitle} — ${gameMeta.displayName}`,
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function ResetPasswordPage() {

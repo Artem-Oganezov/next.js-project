@@ -7,6 +7,10 @@ import { ui } from "@/lib/i18n/ui";
 
 export const metadata: Metadata = {
   title: `${ui.auth.emailVerifiedTitle} — ${gameMeta.displayName}`,
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function VerifyEmailPage() {

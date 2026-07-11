@@ -20,7 +20,7 @@ export type RankResult = {
 
 const SEED_BATCH_SIZE = 1000;
 
-async function seedLeaderboardFromMongo(order: ScoreOrder): Promise<void> {
+export async function seedLeaderboardFromMongo(order: ScoreOrder): Promise<void> {
   await connectDB();
 
   let batch: { username: string; bestScore: number }[] = [];
@@ -46,7 +46,10 @@ async function seedLeaderboardFromMongo(order: ScoreOrder): Promise<void> {
 async function rankFromMongo(bestScore: number, order: ScoreOrder): Promise<RankResult> {
   await connectDB();
 
-  const eligibleFilter = { ...mongoBetterThanFilter(bestScore, order), ...LEADERBOARD_ELIGIBLE_FILTER };
+  const eligibleFilter = {
+    ...LEADERBOARD_ELIGIBLE_FILTER,
+    ...mongoBetterThanFilter(bestScore, order),
+  };
   const higherCount = await User.countDocuments(eligibleFilter);
 
   let nextUsername: string | null = null;
@@ -59,6 +62,17 @@ async function rankFromMongo(bestScore: number, order: ScoreOrder): Promise<Rank
   }
 
   return { rank: higherCount + 1, nextUsername };
+}
+
+/** Pre-warm Redis ZSET on boot when empty (avoids cold-seed spike on first score). */
+export async function warmLeaderboardIfEmpty(): Promise<void> {
+  try {
+    if ((await leaderboardSize()) === 0) {
+      await seedLeaderboardFromMongo(gamePlugin.scoreOrder);
+    }
+  } catch {
+    // Best-effort; computeRank seeds on demand when Redis is available.
+  }
 }
 
 /**

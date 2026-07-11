@@ -3,7 +3,8 @@ import { connectDB } from "@/lib/db/mongoose";
 import { invalidateTop10, upsertLeaderboardScore } from "@/lib/cache/leaderboard";
 import { gamePlugin, type DinoInputLog } from "@/lib/game/plugin";
 import { computeRank } from "@/lib/game/rank";
-import { isBetterScore } from "@/lib/game/score-order";
+import { releaseGameSessionClaim } from "@/lib/game/session-claim";
+import { type ScoreOrder } from "@/lib/game/score-order";
 import { GameSession } from "@/lib/models/GameSession";
 import { User } from "@/lib/models/User";
 import { recordSuspiciousSubmit } from "@/lib/security/anti-cheat";
@@ -38,7 +39,43 @@ export type ProcessScoreInput = {
   score: number;
   sessionId: string;
   inputLog: unknown;
+  /** From async job enqueue — avoids GameSession.findOne in worker. */
+  sessionSnapshot?: {
+    seed: string;
+    startedAt: Date;
+    reviveUsed: boolean;
+  };
 };
+
+function scoreBecameNewBest(
+  order: ScoreOrder,
+  newBest: number,
+  submittedScore: number,
+): boolean {
+  return order === "desc"
+    ? newBest === submittedScore && submittedScore > 0
+    : newBest === submittedScore;
+}
+
+function buildUserScoreUpdatePipeline(score: number, order: ScoreOrder) {
+  return [
+    {
+      $set: {
+        totalScore: { $add: ["$totalScore", score] },
+        bestScore:
+          order === "desc"
+            ? { $max: ["$bestScore", score] }
+            : {
+                $cond: [
+                  { $eq: ["$bestScore", 0] },
+                  score,
+                  { $min: ["$bestScore", score] },
+                ],
+              },
+      },
+    },
+  ];
+}
 
 /**
  * Full score pipeline: replay validation, session claim, user + leaderboard update.
@@ -47,7 +84,7 @@ export type ProcessScoreInput = {
 export async function processScoreSubmission(
   input: ProcessScoreInput,
 ): Promise<ProcessScoreOutcome> {
-  const { userId, username, score, sessionId, inputLog } = input;
+  const { userId, username, score, sessionId, inputLog, sessionSnapshot } = input;
 
   const inputParsed = gamePlugin.parseInputLog(inputLog);
   if (!inputParsed.ok) {
@@ -61,47 +98,62 @@ export async function processScoreSubmission(
 
   await connectDB();
 
-  const gameSession = await GameSession.findOne({
-    _id: sessionId,
-    userId,
-  });
-  if (!gameSession) {
-    await recordSuspiciousSubmit({
+  let sessionSeed: string;
+  let sessionStartedAt: Date;
+  let sessionReviveUsed: boolean;
+
+  if (sessionSnapshot) {
+    sessionSeed = sessionSnapshot.seed;
+    sessionStartedAt = sessionSnapshot.startedAt;
+    sessionReviveUsed = sessionSnapshot.reviveUsed;
+  } else {
+    const gameSession = await GameSession.findOne({
+      _id: sessionId,
       userId,
-      username,
-      score,
-      reason: AntiCheatReason.UNKNOWN_SESSION,
-      elapsedMs: null,
     });
-    return {
-      ok: false,
-      httpStatus: 403,
-      message: msg.game.startFirst,
-      reason: AntiCheatReason.UNKNOWN_SESSION,
-    };
+    if (!gameSession) {
+      await recordSuspiciousSubmit({
+        userId,
+        username,
+        score,
+        reason: AntiCheatReason.UNKNOWN_SESSION,
+        elapsedMs: null,
+      });
+      return {
+        ok: false,
+        httpStatus: 403,
+        message: msg.game.startFirst,
+        reason: AntiCheatReason.UNKNOWN_SESSION,
+      };
+    }
+
+    if (gameSession.scoreSubmitted || gameSession.submitPending) {
+      const elapsedMs = Date.now() - gameSession.startedAt.getTime();
+      await recordSuspiciousSubmit({
+        userId,
+        username,
+        score,
+        reason: AntiCheatReason.DUPLICATE_SUBMIT,
+        elapsedMs,
+      });
+      return {
+        ok: false,
+        httpStatus: 403,
+        message: msg.game.alreadySubmitted,
+        reason: AntiCheatReason.DUPLICATE_SUBMIT,
+      };
+    }
+
+    sessionSeed = gameSession.seed;
+    sessionStartedAt = gameSession.startedAt;
+    sessionReviveUsed = gameSession.reviveUsed;
   }
 
-  const elapsedMs = Date.now() - gameSession.startedAt.getTime();
-
-  if (gameSession.scoreSubmitted) {
-    await recordSuspiciousSubmit({
-      userId,
-      username,
-      score,
-      reason: AntiCheatReason.DUPLICATE_SUBMIT,
-      elapsedMs,
-    });
-    return {
-      ok: false,
-      httpStatus: 403,
-      message: msg.game.alreadySubmitted,
-      reason: AntiCheatReason.DUPLICATE_SUBMIT,
-    };
-  }
+  const elapsedMs = Date.now() - sessionStartedAt.getTime();
 
   const parsedInput = inputParsed.input as DinoInputLog;
   const hasReviveInLog = parsedInput.reviveAtTick !== undefined;
-  if (hasReviveInLog !== gameSession.reviveUsed) {
+  if (hasReviveInLog !== sessionReviveUsed) {
     await recordSuspiciousSubmit({
       userId,
       username,
@@ -120,7 +172,7 @@ export async function processScoreSubmission(
   let replayTicks: number | undefined;
   if (gamePlugin.validateReplay) {
     const replayCheck = gamePlugin.validateReplay(
-      gameSession.seed,
+      sessionSeed,
       inputParsed.input,
       score,
     );
@@ -142,7 +194,7 @@ export async function processScoreSubmission(
     replayTicks = replayCheck.ticks;
   }
 
-  const validation = gamePlugin.validateScore(score, gameSession.startedAt, undefined, {
+  const validation = gamePlugin.validateScore(score, sessionStartedAt, undefined, {
     replayTicks,
   });
   if (!validation.ok) {
@@ -161,10 +213,13 @@ export async function processScoreSubmission(
     };
   }
 
-  const claimed = await GameSession.findOneAndUpdate(
-    { _id: sessionId, scoreSubmitted: false },
-    { $set: { scoreSubmitted: true } },
-  );
+  const claimFilter = sessionSnapshot
+    ? { _id: sessionId, scoreSubmitted: false, submitPending: true }
+    : { _id: sessionId, scoreSubmitted: false };
+
+  const claimed = await GameSession.findOneAndUpdate(claimFilter, {
+    $set: { scoreSubmitted: true, submitPending: false },
+  });
   if (!claimed) {
     await recordSuspiciousSubmit({
       userId,
@@ -181,70 +236,52 @@ export async function processScoreSubmission(
     };
   }
 
-  const userBefore = await User.findById(userId).select("bestScore username");
-  if (!userBefore) {
+  try {
+    const order = gamePlugin.scoreOrder;
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId },
+      buildUserScoreUpdatePipeline(score, order),
+      { returnDocument: "after", updatePipeline: true },
+    );
+    if (!updatedUser) {
+      await releaseGameSessionClaim(sessionId);
+      return {
+        ok: false,
+        httpStatus: 401,
+        message: msg.common.unauthorized,
+        reason: AntiCheatReason.UNKNOWN_SESSION,
+      };
+    }
+
+    const isNewRecord = scoreBecameNewBest(order, updatedUser.bestScore, score);
+
+    if (isNewRecord) {
+      await upsertLeaderboardScore(updatedUser.username, updatedUser.bestScore, order);
+      await invalidateTop10();
+    }
+
+    const { rank, nextUsername } = await computeRank(
+      updatedUser.username,
+      updatedUser.bestScore,
+    );
+
+    void syncSessionCacheForUser(userId).catch(() => {
+      // Best-effort; score result is already persisted and returned to the client.
+    });
+
     return {
-      ok: false,
-      httpStatus: 401,
-      message: msg.common.unauthorized,
-      reason: AntiCheatReason.UNKNOWN_SESSION,
-    };
-  }
-
-  const order = gamePlugin.scoreOrder;
-
-  const updatedUser = await User.findOneAndUpdate(
-    { _id: userId },
-    [
-      {
-        $set: {
-          totalScore: { $add: ["$totalScore", score] },
-          bestScore:
-            order === "desc"
-              ? { $max: ["$bestScore", score] }
-              : {
-                  $cond: [
-                    { $eq: ["$bestScore", 0] },
-                    score,
-                    { $min: ["$bestScore", score] },
-                  ],
-                },
-        },
+      ok: true,
+      result: {
+        bestScore: updatedUser.bestScore,
+        totalScore: updatedUser.totalScore,
+        isNewRecord,
+        rank,
+        nextUsername,
       },
-    ],
-    { returnDocument: "after", updatePipeline: true },
-  );
-  if (!updatedUser) {
-    return {
-      ok: false,
-      httpStatus: 401,
-      message: msg.common.unauthorized,
-      reason: AntiCheatReason.UNKNOWN_SESSION,
     };
+  } catch (error) {
+    await releaseGameSessionClaim(sessionId);
+    throw error;
   }
-
-  const isNewRecord = isBetterScore(userBefore.bestScore, score, order);
-
-  if (isNewRecord) {
-    await upsertLeaderboardScore(updatedUser.username, updatedUser.bestScore, order);
-    await invalidateTop10();
-  }
-
-  const { rank, nextUsername } = await computeRank(
-    updatedUser.username,
-    updatedUser.bestScore,
-  );
-
-  await syncSessionCacheForUser(userId);
-
-  return {
-    ok: true,
-    result: {
-      bestScore: updatedUser.bestScore,
-      totalScore: updatedUser.totalScore,
-      isNewRecord,
-      rank,
-      nextUsername,
-    },
-  };
 }

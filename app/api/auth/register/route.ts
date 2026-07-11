@@ -38,7 +38,12 @@ export const POST = withApiHandler(
 
     try {
       const passwordHash = await hashPassword(password);
-      const user = await User.create({ username, email, passwordHash });
+      const user = await User.create({
+        username,
+        email,
+        passwordHash,
+        authProvider: "local",
+      });
       await createSession(user._id);
       try {
         await sendVerificationEmail(user._id.toString(), user.email);

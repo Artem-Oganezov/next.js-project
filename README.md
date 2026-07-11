@@ -143,9 +143,34 @@ API is stateless; sticky sessions are not required. `GET /api/health` returns 50
 
 ## Tests and CI
 
+### Prerequisites (local)
+
 ```bash
-npm test              # vitest: unit + integration (mongodb-memory-server)
-npm run test:redis    # Redis branch (needs redis://127.0.0.1:6379)
+docker compose -f docker-compose.dev.yml up -d
+```
+
+Tests use a **separate database** (`game-test`) so they do not touch dev data in `.env.local`.
+
+| Command | Mongo | Redis |
+|---------|-------|-------|
+| `npm test` | Docker `game-test`, or in-memory on Linux CI | intentionally unavailable (`6399`) |
+| `npm run test:redis` | same as above | Docker `6379` |
+| `npm run test:e2e` | Docker `e2e_game` (Playwright webServer env) | Docker `6379` |
+
+Override URLs if needed:
+
+```bash
+TEST_MONGODB_URI=mongodb://127.0.0.1:27017/game-test npm test
+TEST_REDIS_URL=redis://127.0.0.1:6379 npm run test:redis
+```
+
+**Windows:** Docker Mongo is required (`mongodb-memory-server` is disabled by default). Emergency fallback: `ALLOW_MEMORY_MONGO=true npm test` (unreliable).
+
+**CI (Ubuntu):** `npm test` falls back to `mongodb-memory-server` when Docker Mongo is absent; Redis service is provided for `test:redis`.
+
+```bash
+npm test              # vitest: unit + integration
+npm run test:redis    # Redis integration (*.redis.test.ts)
 npm run test:e2e      # Playwright (Mongo + Redis + build/start)
 npm run lint
 npm run format:check

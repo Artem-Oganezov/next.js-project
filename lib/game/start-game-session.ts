@@ -30,7 +30,11 @@ export async function startGameSessionForUser(userId: string): Promise<StartedGa
   const result = await GameSession.collection.bulkWrite([
     {
       deleteMany: {
-        filter: { userId: userObjectId, scoreSubmitted: false },
+        filter: {
+          userId: userObjectId,
+          scoreSubmitted: false,
+          submitPending: { $ne: true },
+        },
       },
     },
     {
@@ -40,6 +44,7 @@ export async function startGameSessionForUser(userId: string): Promise<StartedGa
           seed,
           startedAt,
           scoreSubmitted: false,
+          submitPending: false,
           reviveUsed: false,
           expiresAt,
         },
@@ -47,7 +52,9 @@ export async function startGameSessionForUser(userId: string): Promise<StartedGa
     },
   ]);
 
-  const insertedId = result.insertedIds[1];
+  const insertedId = result.insertedIds
+    ? (Object.values(result.insertedIds)[0] as mongoose.Types.ObjectId | undefined)
+    : undefined;
   if (!insertedId) {
     throw new Error("Failed to create game session");
   }

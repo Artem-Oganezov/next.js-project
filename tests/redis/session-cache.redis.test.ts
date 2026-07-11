@@ -7,7 +7,7 @@ import {
 import { syncSessionCacheForUser } from "@/lib/auth/session";
 import { User } from "@/lib/models/User";
 import { Session } from "@/lib/models/Session";
-import type { User as PublicUser } from "@/types/user";
+import type { SessionUser, User as PublicUser } from "@/types/user";
 import { isRedisAvailable } from "../redis.setup";
 
 const describeRedis = isRedisAvailable() ? describe : describe.skip;
@@ -21,6 +21,7 @@ const sampleUser = (): PublicUser => ({
   username: "cache_user",
   email: "cache@test.com",
   emailVerified: true,
+  authProvider: "local",
   bestScore: 10,
   totalScore: 20,
   unlockedSkins: ["default"],
@@ -39,7 +40,18 @@ describeRedis("Redis session cache", () => {
     const user = sampleUser();
 
     await setCachedSessionUser(tokenHash, user);
-    await expect(getCachedSessionUser(tokenHash)).resolves.toEqual(user);
+    const cached = await getCachedSessionUser(tokenHash);
+    expect(cached).toEqual({
+      id: user.id,
+      username: user.username,
+      emailVerified: user.emailVerified,
+      authProvider: user.authProvider,
+      bestScore: user.bestScore,
+      totalScore: user.totalScore,
+      unlockedSkins: user.unlockedSkins,
+      activeSkin: user.activeSkin,
+    });
+    expect(cached).not.toHaveProperty("email");
 
     await markUserBanned(user.id);
     await expect(getCachedSessionUser(tokenHash)).resolves.toBeNull();
@@ -86,5 +98,6 @@ describeRedis("Redis session cache", () => {
     const cached = await getCachedSessionUser(tokenHash);
     expect(cached?.bestScore).toBe(99);
     expect(cached?.totalScore).toBe(150);
+    expect(cached).not.toHaveProperty("email");
   });
 });

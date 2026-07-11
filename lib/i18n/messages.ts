@@ -27,6 +27,11 @@ export const msg = {
       "If an account exists for this email, a reset link has been sent.",
     verifyTokenRequired: "Token is required",
     verifyLinkInvalid: "Invalid or expired verification link",
+    googleEmailTaken:
+      "This email is already registered with a password. Log in with your password instead.",
+    googleNotConfigured: "Google sign-in is not available",
+    googleSignInFailed: "Google sign-in failed. Please try again.",
+    googlePasswordUnavailable: "Password sign-in is not available for this account",
   },
   game: {
     startFirst: "Start a game session first",

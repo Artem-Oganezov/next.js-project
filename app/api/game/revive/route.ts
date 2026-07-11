@@ -5,6 +5,7 @@ import { parseJsonBody } from "@/lib/api/http";
 import { getSessionUser } from "@/lib/auth/session";
 import { RATE_LIMIT } from "@/lib/config/app";
 import { connectDB } from "@/lib/db/mongoose";
+import { assertCanPlay } from "@/lib/game/play-guard";
 import { GameSession } from "@/lib/models/GameSession";
 import { enforceRateLimit } from "@/lib/security/rate-limit";
 import { reviveBodySchema } from "@/lib/validation/revive";
@@ -16,6 +17,11 @@ export const POST = withApiHandler(
     const sessionUser = await getSessionUser();
     if (!sessionUser) {
       return unauthorized();
+    }
+
+    const playGuard = assertCanPlay(sessionUser);
+    if (!playGuard.ok) {
+      return forbidden(playGuard.message);
     }
 
     const userLimit = await enforceRateLimit(
@@ -47,6 +53,7 @@ export const POST = withApiHandler(
         userId: sessionUser.id,
         scoreSubmitted: false,
         reviveUsed: false,
+        submitPending: { $ne: true },
       },
       { $set: { reviveUsed: true } },
     );

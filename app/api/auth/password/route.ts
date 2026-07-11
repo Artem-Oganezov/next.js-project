@@ -41,6 +41,10 @@ export const PUT = withApiHandler(
       return unauthorized();
     }
 
+    if (!user.passwordHash) {
+      return badRequest(msg.auth.googlePasswordUnavailable);
+    }
+
     const valid = await verifyLoginPassword(currentPassword, user.passwordHash);
     if (!valid) {
       return unauthorized("Current password is incorrect");

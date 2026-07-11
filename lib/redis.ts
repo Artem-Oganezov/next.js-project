@@ -39,87 +39,189 @@ export type RedisClient = {
   lpush(key: string, value: string): Promise<void>;
   /** Blocking right pop; null when timeout expires without a value. */
   brpop(key: string, timeoutSeconds: number): Promise<string | null>;
+  /** Batch commands in one round-trip (TCP pipeline; REST multi-exec). */
+  pipeline(): RedisPipeline;
+};
+
+export type RedisPipeline = {
+  zadd(key: string, entries: { score: number; member: string }[]): RedisPipeline;
+  zcountAbove(key: string, score: number): RedisPipeline;
+  zfirstAbove(key: string, score: number): RedisPipeline;
+  incr(key: string): RedisPipeline;
+  del(key: string): RedisPipeline;
+  lpush(key: string, value: string): RedisPipeline;
+  setEx(key: string, value: string, exSeconds: number): RedisPipeline;
+  exec(): Promise<unknown[]>;
 };
 
 function createIoRedisClient(url: string): RedisClient {
   const client = new IORedis(url, {
-    lazyConnect: true,
     maxRetriesPerRequest: 1,
     enableOfflineQueue: false,
   });
+  ioRedisNative = client;
   // Without a handler, ioredis throws an unhandled 'error' when Redis is unavailable.
   client.on("error", () => {});
 
+  const waitUntilReady = (): Promise<void> => {
+    if (client.status === "ready") {
+      return Promise.resolve();
+    }
+    return new Promise((resolve, reject) => {
+      const onReady = () => {
+        cleanup();
+        resolve();
+      };
+      const onError = (error: Error) => {
+        cleanup();
+        reject(error);
+      };
+      const cleanup = () => {
+        client.off("ready", onReady);
+        client.off("error", onError);
+      };
+      client.once("ready", onReady);
+      client.once("error", onError);
+    });
+  };
+
+  const run = async <T>(operation: () => Promise<T>): Promise<T> => {
+    await waitUntilReady();
+    return operation();
+  };
+
   return {
     async ping() {
-      await client.ping();
+      return run(() => client.ping());
     },
     async get(key) {
-      return client.get(key);
+      return run(() => client.get(key));
     },
     async setEx(key, value, exSeconds) {
-      await client.set(key, value, "EX", exSeconds);
+      return run(() => client.set(key, value, "EX", exSeconds));
     },
     async del(key) {
-      await client.del(key);
+      return run(() => client.del(key));
     },
     async incr(key) {
-      return client.incr(key);
+      return run(() => client.incr(key));
     },
     async incrWithExpire(key, exSeconds) {
-      const result = await client.eval(
-        INCR_WITH_EXPIRE_SCRIPT,
-        1,
-        key,
-        String(exSeconds),
-      );
-      return Number(result);
+      return run(async () => {
+        const result = await client.eval(
+          INCR_WITH_EXPIRE_SCRIPT,
+          1,
+          key,
+          String(exSeconds),
+        );
+        return Number(result);
+      });
     },
     async expire(key, seconds) {
-      await client.expire(key, seconds);
+      return run(() => client.expire(key, seconds));
     },
     async ttl(key) {
-      return client.ttl(key);
+      return run(() => client.ttl(key));
     },
     async zadd(key, entries) {
       if (entries.length === 0) return;
-      const args = entries.flatMap((e) => [e.score, e.member]);
-      await client.zadd(key, ...args);
+      return run(() => {
+        const args = entries.flatMap((e) => [e.score, e.member]);
+        return client.zadd(key, ...args);
+      });
     },
     async zrem(key, members) {
       if (members.length === 0) return;
-      await client.zrem(key, ...members);
+      return run(() => client.zrem(key, ...members));
     },
     async zcard(key) {
-      return client.zcard(key);
+      return run(() => client.zcard(key));
     },
     async zcountAbove(key, score) {
-      return client.zcount(key, `(${score}`, "+inf");
+      return run(() => client.zcount(key, `(${score}`, "+inf"));
     },
     async zfirstAbove(key, score) {
-      const members = await client.zrangebyscore(
-        key,
-        `(${score}`,
-        "+inf",
-        "LIMIT",
-        0,
-        1,
-      );
-      return members[0] ?? null;
+      return run(async () => {
+        const members = await client.zrangebyscore(
+          key,
+          `(${score}`,
+          "+inf",
+          "LIMIT",
+          0,
+          1,
+        );
+        return members[0] ?? null;
+      });
     },
     async setNx(key, value, exSeconds) {
-      const result = await client.set(key, value, "EX", exSeconds, "NX");
-      return result === "OK";
+      return run(async () => {
+        const result = await client.set(key, value, "EX", exSeconds, "NX");
+        return result === "OK";
+      });
     },
     async lpush(key, value) {
-      await client.lpush(key, value);
+      return run(() => client.lpush(key, value));
     },
     async brpop(key, timeoutSeconds) {
-      const result = await client.brpop(key, timeoutSeconds);
-      if (!result) return null;
-      return result[1] ?? null;
+      return run(async () => {
+        const result = await client.brpop(key, timeoutSeconds);
+        if (!result) return null;
+        return result[1] ?? null;
+      });
+    },
+    pipeline() {
+      const pipe = client.pipeline();
+      return createIoRedisPipeline(pipe, run);
     },
   };
+}
+
+function createIoRedisPipeline(
+  pipe: ReturnType<IORedis["pipeline"]>,
+  run: <T>(operation: () => Promise<T>) => Promise<T>,
+): RedisPipeline {
+  const builder: RedisPipeline = {
+    zadd(key, entries) {
+      if (entries.length > 0) {
+        const args = entries.flatMap((e) => [e.score, e.member]);
+        pipe.zadd(key, ...args);
+      }
+      return builder;
+    },
+    zcountAbove(key, score) {
+      pipe.zcount(key, `(${score}`, "+inf");
+      return builder;
+    },
+    zfirstAbove(key, score) {
+      pipe.zrangebyscore(key, `(${score}`, "+inf", "LIMIT", 0, 1);
+      return builder;
+    },
+    incr(key) {
+      pipe.incr(key);
+      return builder;
+    },
+    del(key) {
+      pipe.del(key);
+      return builder;
+    },
+    setEx(key, value, exSeconds) {
+      pipe.set(key, value, "EX", exSeconds);
+      return builder;
+    },
+    lpush(key, value) {
+      pipe.lpush(key, value);
+      return builder;
+    },
+    async exec() {
+      const results = await run(() => pipe.exec());
+      if (!results) return [];
+      return results.map(([error, value]) => {
+        if (error) throw error;
+        return value;
+      });
+    },
+  };
+  return builder;
 }
 
 function createUpstashClient(url: string, token: string): RedisClient {
@@ -196,11 +298,59 @@ function createUpstashClient(url: string, token: string): RedisClient {
       }
       return null;
     },
+    pipeline() {
+      const pipe = client.pipeline();
+      return createUpstashPipeline(pipe);
+    },
   };
+}
+
+function createUpstashPipeline(
+  pipe: ReturnType<UpstashRedis["pipeline"]>,
+): RedisPipeline {
+  const builder: RedisPipeline = {
+    zadd(key, entries) {
+      if (entries.length > 0) {
+        const [first, ...rest] = entries;
+        pipe.zadd(key, first, ...rest);
+      }
+      return builder;
+    },
+    zcountAbove(key, score) {
+      pipe.zcount(key, `(${score}`, "+inf");
+      return builder;
+    },
+    zfirstAbove(key, score) {
+      pipe.zrange(key, `(${score}`, "+inf", { byScore: true, offset: 0, count: 1 });
+      return builder;
+    },
+    incr(key) {
+      pipe.incr(key);
+      return builder;
+    },
+    del(key) {
+      pipe.del(key);
+      return builder;
+    },
+    setEx(key, value, exSeconds) {
+      pipe.set(key, value, { ex: exSeconds });
+      return builder;
+    },
+    lpush(key, value) {
+      pipe.lpush(key, value);
+      return builder;
+    },
+    async exec() {
+      const results = await pipe.exec();
+      return results as unknown[];
+    },
+  };
+  return builder;
 }
 
 let cachedClient: RedisClient | null = null;
 let warmPromise: Promise<void> | null = null;
+let ioRedisNative: IORedis | null = null;
 
 export function getRedis(): RedisClient {
   if (cachedClient) {
@@ -236,7 +386,11 @@ export function warmRedis(): Promise<void> {
 }
 
 /** Reset singleton client (tests, REDIS_URL change). */
-export function resetRedisCache(): void {
+export async function resetRedisCache(): Promise<void> {
+  if (ioRedisNative) {
+    await ioRedisNative.quit().catch(() => {});
+  }
   cachedClient = null;
   warmPromise = null;
+  ioRedisNative = null;
 }
