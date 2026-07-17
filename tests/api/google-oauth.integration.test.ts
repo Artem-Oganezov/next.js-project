@@ -9,10 +9,8 @@ describe("Google OAuth routes", () => {
     vi.stubEnv("GOOGLE_CLIENT_SECRET", "");
     vi.stubEnv("APP_URL", "");
 
-    const { GET } = await import("@/app/api/auth/providers/route") as ProvidersRoute;
-    const response = await GET(
-      new Request("http://localhost/api/auth/providers"),
-    );
+    const { GET } = (await import("@/app/api/auth/providers/route")) as ProvidersRoute;
+    const response = await GET(new Request("http://localhost/api/auth/providers"));
     const body = (await response.json()) as { google: boolean };
 
     expect(response.status).toBe(200);
@@ -24,7 +22,7 @@ describe("Google OAuth routes", () => {
     vi.stubEnv("GOOGLE_CLIENT_SECRET", "");
     vi.stubEnv("APP_URL", "");
 
-    const { GET } = await import("@/app/api/auth/google/route") as GoogleRoute;
+    const { GET } = (await import("@/app/api/auth/google/route")) as GoogleRoute;
     const response = await GET(new Request("http://localhost/api/auth/google"));
 
     expect(response.status).toBe(503);

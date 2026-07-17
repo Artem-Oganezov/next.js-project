@@ -43,7 +43,9 @@ export default function GameOverModal({
       </div>
 
       {rankInfo && (
-        <div className="dead-rank">{ui.game.rankLine(rankInfo.rank, rankInfo.nextUsername)}</div>
+        <div className="dead-rank">
+          {ui.game.rankLine(rankInfo.rank, rankInfo.nextUsername)}
+        </div>
       )}
 
       {scoreSaving && (
@@ -68,7 +70,11 @@ export default function GameOverModal({
           {ui.game.playAgain}
         </button>
         {onOpenLeaderboard && (
-          <button type="button" onClick={onOpenLeaderboard} className="pbtn pbtn-secondary">
+          <button
+            type="button"
+            onClick={onOpenLeaderboard}
+            className="pbtn pbtn-secondary"
+          >
             {ui.game.toLeaderboard}
           </button>
         )}

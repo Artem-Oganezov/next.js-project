@@ -3,14 +3,8 @@ import { requireAdminSecret } from "@/lib/admin/auth";
 import { badRequest, notFound } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { parseJsonBody } from "@/lib/api/http";
-import {
-  clearUserBanned,
-  markUserBanned,
-} from "@/lib/auth/session-cache";
-import {
-  invalidateTop10,
-  upsertLeaderboardScore,
-} from "@/lib/cache/leaderboard";
+import { clearUserBanned, markUserBanned } from "@/lib/auth/session-cache";
+import { invalidateTop10, upsertLeaderboardScore } from "@/lib/cache/leaderboard";
 import { connectDB } from "@/lib/db/mongoose";
 import { gamePlugin } from "@/lib/game/plugin";
 import { Session } from "@/lib/models/Session";

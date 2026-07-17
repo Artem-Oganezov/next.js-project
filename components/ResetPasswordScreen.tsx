@@ -12,10 +12,7 @@ import { msg } from "@/lib/i18n/messages";
 import { ui } from "@/lib/i18n/ui";
 
 const newPasswordSchema = z.object({
-  password: z
-    .string()
-    .min(8, msg.auth.passwordMin)
-    .max(128, msg.auth.passwordMax),
+  password: z.string().min(8, msg.auth.passwordMin).max(128, msg.auth.passwordMax),
 });
 
 type NewPasswordInput = z.infer<typeof newPasswordSchema>;

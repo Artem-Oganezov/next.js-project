@@ -1,7 +1,5 @@
 import type { Types } from "mongoose";
-import {
-  invalidateAllSessionCachesForUser,
-} from "@/lib/auth/session";
+import { invalidateAllSessionCachesForUser } from "@/lib/auth/session";
 import {
   ANTI_CHEAT_AUTO_BAN_THRESHOLD,
   ANTI_CHEAT_AUTO_BAN_WINDOW_SEC,

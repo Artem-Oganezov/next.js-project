@@ -22,7 +22,10 @@ export function darkenColor(color: string, factor = 0.82): string {
   const r = parseInt(color.slice(1, 3), 16);
   const g = parseInt(color.slice(3, 5), 16);
   const b = parseInt(color.slice(5, 7), 16);
-  const toHex = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+  const toHex = (n: number) =>
+    Math.max(0, Math.min(255, Math.round(n)))
+      .toString(16)
+      .padStart(2, "0");
 
   return `#${toHex(r * factor)}${toHex(g * factor)}${toHex(b * factor)}`;
 }

@@ -38,10 +38,7 @@ export const POST = withApiHandler(
     await connectDB();
 
     const user = await User.findOne({ username });
-    const passwordOk = await verifyLoginPassword(
-      password,
-      user?.passwordHash,
-    );
+    const passwordOk = await verifyLoginPassword(password, user?.passwordHash);
     if (!user || !passwordOk) {
       return unauthorized(msg.auth.invalidCredentials);
     }

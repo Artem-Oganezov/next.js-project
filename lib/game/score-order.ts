@@ -27,7 +27,9 @@ export function mongoBetterThanFilter(
   score: number,
   order: ScoreOrder,
 ): { bestScore: { $gt: number } } | { bestScore: { $lt: number } } {
-  return order === "desc" ? { bestScore: { $gt: score } } : { bestScore: { $lt: score } };
+  return order === "desc"
+    ? { bestScore: { $gt: score } }
+    : { bestScore: { $lt: score } };
 }
 
 export function mongoNextSort(order: ScoreOrder): { bestScore: 1 | -1 } {

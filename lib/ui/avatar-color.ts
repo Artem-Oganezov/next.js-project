@@ -6,7 +6,9 @@ export function avatarColorForUsername(
   options?: { isCurrentUser?: boolean; activeSkinId?: string },
 ): string {
   if (options?.isCurrentUser && options.activeSkinId) {
-    return SKINS.find((skin) => skin.id === options.activeSkinId)?.color ?? SKINS[0].color;
+    return (
+      SKINS.find((skin) => skin.id === options.activeSkinId)?.color ?? SKINS[0].color
+    );
   }
 
   let hash = 0;

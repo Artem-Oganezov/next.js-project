@@ -46,7 +46,10 @@ export function isGoogleOAuthEnabled(): boolean {
 export function getGoogleRedirectUri(): string {
   const { APP_URL } = getEnv();
   if (!APP_URL) {
-    throw new GoogleOAuthError("APP_URL is required for Google OAuth", "not_configured");
+    throw new GoogleOAuthError(
+      "APP_URL is required for Google OAuth",
+      "not_configured",
+    );
   }
   return new URL("/api/auth/google/callback", APP_URL).toString();
 }
@@ -103,11 +106,17 @@ export async function fetchGoogleProfileFromCode(
     });
     payload = ticket.getPayload();
   } catch {
-    throw new GoogleOAuthError("Google ID token verification failed", "profile_invalid");
+    throw new GoogleOAuthError(
+      "Google ID token verification failed",
+      "profile_invalid",
+    );
   }
 
   if (!payload?.sub || !payload.email) {
-    throw new GoogleOAuthError("Google profile is missing required fields", "profile_invalid");
+    throw new GoogleOAuthError(
+      "Google profile is missing required fields",
+      "profile_invalid",
+    );
   }
 
   if (payload.email_verified === false) {
@@ -136,9 +145,7 @@ export async function allocateUsername(
 ): Promise<string> {
   const emailLocal = email.split("@")[0] ?? "player";
   const base =
-    sanitizeUsernameBase(name ?? "") ||
-    sanitizeUsernameBase(emailLocal) ||
-    "player";
+    sanitizeUsernameBase(name ?? "") || sanitizeUsernameBase(emailLocal) || "player";
 
   for (let attempt = 0; attempt < 20; attempt++) {
     const suffix = attempt === 0 ? "" : `_${randomBytes(2).toString("hex")}`;

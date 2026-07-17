@@ -20,11 +20,7 @@ export default function LeaderboardScreen({
   activeSkinId,
   onBack,
 }: LeaderboardScreenProps) {
-  const {
-    data: leaderboard = [],
-    isLoading,
-    isError,
-  } = useLeaderboardQuery();
+  const { data: leaderboard = [], isLoading, isError } = useLeaderboardQuery();
 
   const { data: rankData } = useRankQuery(!isLoading && !isError);
 
@@ -47,7 +43,9 @@ export default function LeaderboardScreen({
         <div className="panel">
           <EmptyState
             message={ui.leaderboard.empty}
-            dinoColor={SKINS.find((s) => s.id === activeSkinId)?.color ?? SKINS[0]?.color}
+            dinoColor={
+              SKINS.find((s) => s.id === activeSkinId)?.color ?? SKINS[0]?.color
+            }
           />
         </div>
       )}

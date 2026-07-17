@@ -68,7 +68,9 @@ describe("Extended auth API", () => {
     expect(response.status).toBe(201);
 
     const meBefore = await meGet(new Request("http://localhost/api/auth/me"));
-    const meBody = await parseJsonResponse<{ user: { emailVerified: boolean } }>(meBefore);
+    const meBody = await parseJsonResponse<{ user: { emailVerified: boolean } }>(
+      meBefore,
+    );
     expect(meBody.body.user.emailVerified).toBe(false);
 
     expect(sentEmails.some((e) => e.subject.includes("Verify"))).toBe(true);
@@ -82,10 +84,14 @@ describe("Extended auth API", () => {
       new Request(`http://localhost/api/auth/verify-email?token=${token}`),
     );
     expect(verifyResponse.status).toBe(307);
-    expect(verifyResponse.headers.get("location")).toContain("/verify-email?status=success");
+    expect(verifyResponse.headers.get("location")).toContain(
+      "/verify-email?status=success",
+    );
 
     const meAfter = await meGet(new Request("http://localhost/api/auth/me"));
-    const afterBody = await parseJsonResponse<{ user: { emailVerified: boolean } }>(meAfter);
+    const afterBody = await parseJsonResponse<{ user: { emailVerified: boolean } }>(
+      meAfter,
+    );
     expect(afterBody.body.user.emailVerified).toBe(true);
   });
 

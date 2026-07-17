@@ -78,9 +78,7 @@ async function submitHonestScore(targetScore: number): Promise<void> {
   await GameSession.updateOne(
     { _id: sessionId },
     {
-      startedAt: new Date(
-        Date.now() - (Math.ceil(run.ticks / 60) + 5) * 1000,
-      ),
+      startedAt: new Date(Date.now() - (Math.ceil(run.ticks / 60) + 5) * 1000),
     },
   );
 
@@ -241,9 +239,9 @@ describe("Admin API", () => {
     const afterBody = (await leaderboardAfter.json()) as {
       leaderboard: { username: string }[];
     };
-    expect(
-      afterBody.leaderboard.some((entry) => entry.username === "unban_user"),
-    ).toBe(true);
+    expect(afterBody.leaderboard.some((entry) => entry.username === "unban_user")).toBe(
+      true,
+    );
   });
 
   it("GET /api/metrics returns prometheus text", async () => {

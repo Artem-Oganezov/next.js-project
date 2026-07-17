@@ -73,7 +73,8 @@ const envSchema = z
     if (hasGoogleId !== hasGoogleSecret) {
       ctx.addIssue({
         code: "custom",
-        message: "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set or both omitted",
+        message:
+          "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must both be set or both omitted",
       });
     }
     if (hasGoogleId && !env.APP_URL) {
@@ -96,7 +97,8 @@ const envSchema = z
     if (env.SCORE_ASYNC && !hasTcp) {
       ctx.addIssue({
         code: "custom",
-        message: "SCORE_ASYNC requires REDIS_URL (TCP); Upstash REST cannot run the score worker queue",
+        message:
+          "SCORE_ASYNC requires REDIS_URL (TCP); Upstash REST cannot run the score worker queue",
       });
     }
   });

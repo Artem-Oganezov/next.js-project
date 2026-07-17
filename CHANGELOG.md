@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 ## [1.7.0] — 2026-07-07
 
 ### Added
+
 - **`REQUIRE_EMAIL_VERIFICATION`** env flag — optional gate on `session/start` and `score` (`lib/game/play-guard.ts`); enabled in `.env.production.example`.
 - **`MONGODB_MAX_POOL_SIZE`** validated in `lib/env.ts` (default 100, range 1–500).
 - **Leaderboard cache generation** — `lb:top10:gen` invalidates stale top-10 across nodes on ban/unban.
@@ -13,6 +14,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 - Tests: session cache after score (`/api/auth/me`), play guard, unban → leaderboard, stale cache bump (Redis).
 
 ### Changed
+
 - Score route: single `parseInputLog` in `processScoreSubmission` (no duplicate parse in route).
 - Removed deprecated `scoreSchema` alias (`lib/validation/score.ts`).
 - Version bumped to **1.7.0**.
@@ -20,6 +22,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 ## [1.6.0] — 2026-07-05
 
 ### Added
+
 - **Revive after ad (stub):** first death shows continue overlay; `POST /api/game/revive` (once per session); `inputLog` supports `{ jumpTicks, reviveAtTick }`; deterministic `engine.revive()` for server replay.
 - **Ad provider layer:** `lib/client/ads` — `stub` / `slot` / `none` via `NEXT_PUBLIC_REVIVE_AD_PROVIDER`; integration guide [docs/ADS.md](docs/ADS.md).
 - **Legal stubs:** Privacy/Terms sections for ads and third-party services.
@@ -29,6 +32,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 - **Live prod checklist:** [docs/LIVE-PROD.md](docs/LIVE-PROD.md).
 
 ### Changed
+
 - Revive ad default is **`none`** (soft launch); set `stub` in `.env.local` for local ad testing.
 - Mobile/desktop revive overlay polish (viewport, safe areas, touch targets, jump hints).
 - Version bumped to **1.6.0**.
@@ -36,6 +40,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 ## [1.5.0] — 2026-07-05
 
 ### Added
+
 - **Universal game contract:** `inputLog` replaces `jumpTicks`; `scoreOrder: "desc" | "asc"` for time-attack games.
 - **Account auth flows:** forgot/reset password, email verification, change password, delete account (`/api/auth/*`).
 - **Email layer:** nodemailer + token model; optional SMTP via env (`APP_URL`, `SMTP_*`).
@@ -46,6 +51,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 - Tests: plugin contract (10), extended auth (4) — **80 tests** total.
 
 ### Changed
+
 - Score submit body: `{ score, sessionId, inputLog }`.
 - Validation and error messages moved to English.
 - Version bumped to **1.5.0**.
@@ -53,6 +59,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 ## [1.4.0] — 2026-07-04
 
 ### Added
+
 - **Playwright E2E** (`e2e/`) — registration, login, full game loop through
   game over; separate CI job with Mongo + Redis.
 - **Redis integration tests** (`npm run test:redis`, `vitest.redis.config.ts`) —
@@ -65,6 +72,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer
 - `ADMIN_SECRET` in env for admin API and metrics protection in production.
 
 ### Changed
+
 - Anti-cheat logs are duplicated to the DB (not only stderr).
 - User ban: blocks login/me, clears sessions.
 

@@ -5,7 +5,9 @@ import { formatAntiCheatReason } from "@/lib/security/anti-cheat-labels";
 describe("formatAntiCheatReason", () => {
   it("returns human label for known codes", () => {
     expect(formatAntiCheatReason(AntiCheatReason.SCORE_CEILING)).toMatch(/too high/i);
-    expect(formatAntiCheatReason(AntiCheatReason.REPLAY_SCORE_MISMATCH)).toMatch(/replay/i);
+    expect(formatAntiCheatReason(AntiCheatReason.REPLAY_SCORE_MISMATCH)).toMatch(
+      /replay/i,
+    );
   });
 
   it("falls back to raw code for unknown values", () => {

@@ -91,26 +91,26 @@ Remaining boundary: replay proves the run followed game rules, not that a human 
 
 ## API
 
-| Method       | Path                              | Description                                      |
-| ------------ | --------------------------------- | ------------------------------------------------ |
-| `GET`        | `/api/health`                     | Mongo + Redis + observability summary            |
-| `GET`        | `/api/metrics`                    | Prometheus / JSON metrics                          |
-| `POST`       | `/api/auth/register`              | Register                                         |
-| `POST`       | `/api/auth/login`                 | Log in                                           |
-| `POST`       | `/api/auth/logout`                | Log out                                          |
-| `GET`        | `/api/auth/me`                    | Current user                                     |
-| `POST`       | `/api/auth/forgot-password`       | Send password reset email → `/reset-password`    |
-| `POST`       | `/api/auth/reset-password`        | Reset password with token (also `/reset-password`) |
-| `POST`       | `/api/auth/resend-verification`   | Resend email verification (authenticated)        |
-| `GET`        | `/api/auth/verify-email`          | Verify email → redirect `/verify-email?status=` |
-| `PUT`        | `/api/auth/password`              | Change password (authenticated)                  |
-| `DELETE`     | `/api/auth/account`               | Delete account (authenticated)                   |
-| `POST`       | `/api/game/session/start`         | Start run → `sessionId` + `seed`                   |
-| `POST`       | `/api/game/revive`                | Mark revive used (once per session, before continue) |
-| `POST`       | `/api/game/score`                 | `{ score, sessionId, inputLog }` → best + rank   |
-| `GET`        | `/api/leaderboard`                | Top 10 (60s Redis cache)                         |
-| `GET`        | `/api/leaderboard/rank`           | Current user rank                                |
-| `POST`/`PUT` | `/api/skins`                      | Unlock / equip skin                              |
+| Method       | Path                            | Description                                          |
+| ------------ | ------------------------------- | ---------------------------------------------------- |
+| `GET`        | `/api/health`                   | Mongo + Redis + observability summary                |
+| `GET`        | `/api/metrics`                  | Prometheus / JSON metrics                            |
+| `POST`       | `/api/auth/register`            | Register                                             |
+| `POST`       | `/api/auth/login`               | Log in                                               |
+| `POST`       | `/api/auth/logout`              | Log out                                              |
+| `GET`        | `/api/auth/me`                  | Current user                                         |
+| `POST`       | `/api/auth/forgot-password`     | Send password reset email → `/reset-password`        |
+| `POST`       | `/api/auth/reset-password`      | Reset password with token (also `/reset-password`)   |
+| `POST`       | `/api/auth/resend-verification` | Resend email verification (authenticated)            |
+| `GET`        | `/api/auth/verify-email`        | Verify email → redirect `/verify-email?status=`      |
+| `PUT`        | `/api/auth/password`            | Change password (authenticated)                      |
+| `DELETE`     | `/api/auth/account`             | Delete account (authenticated)                       |
+| `POST`       | `/api/game/session/start`       | Start run → `sessionId` + `seed`                     |
+| `POST`       | `/api/game/revive`              | Mark revive used (once per session, before continue) |
+| `POST`       | `/api/game/score`               | `{ score, sessionId, inputLog }` → best + rank       |
+| `GET`        | `/api/leaderboard`              | Top 10 (60s Redis cache)                             |
+| `GET`        | `/api/leaderboard/rank`         | Current user rank                                    |
+| `POST`/`PUT` | `/api/skins`                    | Unlock / equip skin                                  |
 
 ## Deploy on VPS (Docker)
 
@@ -151,11 +151,11 @@ docker compose -f docker-compose.dev.yml up -d
 
 Tests use a **separate database** (`game-test`) so they do not touch dev data in `.env.local`.
 
-| Command | Mongo | Redis |
-|---------|-------|-------|
-| `npm test` | Docker `game-test`, or in-memory on Linux CI | intentionally unavailable (`6399`) |
-| `npm run test:redis` | same as above | Docker `6379` |
-| `npm run test:e2e` | Docker `e2e_game` (Playwright webServer env) | Docker `6379` |
+| Command              | Mongo                                        | Redis                              |
+| -------------------- | -------------------------------------------- | ---------------------------------- |
+| `npm test`           | Docker `game-test`, or in-memory on Linux CI | intentionally unavailable (`6399`) |
+| `npm run test:redis` | same as above                                | Docker `6379`                      |
+| `npm run test:e2e`   | Docker `e2e_game` (Playwright webServer env) | Docker `6379`                      |
 
 Override URLs if needed:
 

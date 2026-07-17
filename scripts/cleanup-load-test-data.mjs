@@ -6,8 +6,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import mongoose from "mongoose";
 
-const TEST_USER_REGEX =
-  /^(k6_|k6|load_|cap_|stress_|test_)/i;
+const TEST_USER_REGEX = /^(k6_|k6|load_|cap_|stress_|test_)/i;
 
 function loadEnvLocal() {
   const envPath = join(process.cwd(), ".env.local");
@@ -63,7 +62,9 @@ if (userIds.length > 0) {
     sessions.deleteMany({ userId: { $in: userIds } }),
     gameSessions.deleteMany({ userId: { $in: userIds } }),
   ]);
-  console.log(`Mongo deleted: users=${u.deletedCount} sessions=${s.deletedCount} gameSessions=${g.deletedCount}`);
+  console.log(
+    `Mongo deleted: users=${u.deletedCount} sessions=${s.deletedCount} gameSessions=${g.deletedCount}`,
+  );
 }
 
 await mongoose.disconnect();
@@ -82,9 +83,13 @@ if (redisUrl && redisToken && usernames.length > 0) {
     }).catch(() => {});
   }
 
-  await fetch(`${base}/del/lb:top10/lb:top10:gen`, { method: "POST", headers }).catch(() => {});
+  await fetch(`${base}/del/lb:top10/lb:top10:gen`, { method: "POST", headers }).catch(
+    () => {},
+  );
 
-  console.log(`Redis: zrem ${usernames.length} leaderboard members, invalidated top10 cache`);
+  console.log(
+    `Redis: zrem ${usernames.length} leaderboard members, invalidated top10 cache`,
+  );
 } else {
   console.log("Redis: skipped (no Upstash creds or no users)");
 }

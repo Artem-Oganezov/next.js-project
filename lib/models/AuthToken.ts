@@ -35,5 +35,4 @@ const authTokenSchema = new Schema<IAuthToken>({
 authTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const AuthToken: Model<IAuthToken> =
-  mongoose.models.AuthToken ??
-  mongoose.model<IAuthToken>("AuthToken", authTokenSchema);
+  mongoose.models.AuthToken ?? mongoose.model<IAuthToken>("AuthToken", authTokenSchema);

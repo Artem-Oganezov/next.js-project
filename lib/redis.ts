@@ -248,9 +248,11 @@ function createUpstashClient(url: string, token: string): RedisClient {
       return client.incr(key);
     },
     async incrWithExpire(key, exSeconds) {
-      const result = await client.eval(INCR_WITH_EXPIRE_SCRIPT, [key], [
-        String(exSeconds),
-      ]);
+      const result = await client.eval(
+        INCR_WITH_EXPIRE_SCRIPT,
+        [key],
+        [String(exSeconds)],
+      );
       return Number(result);
     },
     async expire(key, seconds) {
@@ -394,4 +396,3 @@ export async function resetRedisCache(): Promise<void> {
   warmPromise = null;
   ioRedisNative = null;
 }
-

@@ -7,7 +7,9 @@ type ApiFetchOptions = RequestInit & {
   json?: unknown;
 };
 
-async function parseApiResponse<T>(response: Response): Promise<T & { message?: string }> {
+async function parseApiResponse<T>(
+  response: Response,
+): Promise<T & { message?: string }> {
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) {
     throw new ApiError(
@@ -91,13 +93,10 @@ export const api = {
       { method: "POST" },
     ),
   gameReviveChallenge: (sessionId: string) =>
-    apiFetch<{ challengeId: string; minWaitMs: number }>(
-      "/api/game/revive/challenge",
-      {
-        method: "POST",
-        json: { sessionId },
-      },
-    ),
+    apiFetch<{ challengeId: string; minWaitMs: number }>("/api/game/revive/challenge", {
+      method: "POST",
+      json: { sessionId },
+    }),
   gameRevive: (sessionId: string, challengeId: string) =>
     apiFetch<{ ok: boolean }>("/api/game/revive", {
       method: "POST",

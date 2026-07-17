@@ -1,9 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { connectDB } from "@/lib/db/mongoose";
-import {
-  getCachedSessionUser,
-  setCachedSessionUser,
-} from "@/lib/auth/session-cache";
+import { getCachedSessionUser, setCachedSessionUser } from "@/lib/auth/session-cache";
 import { syncSessionCacheForUser } from "@/lib/auth/session";
 import { User } from "@/lib/models/User";
 import { Session } from "@/lib/models/Session";
@@ -30,11 +27,8 @@ const sampleUser = (): PublicUser => ({
 
 describeRedis("Redis session cache", () => {
   it("returns cached user and respects ban flag", async () => {
-    const {
-      clearUserBanned,
-      invalidateSessionCache,
-      markUserBanned,
-    } = await import("@/lib/auth/session-cache");
+    const { clearUserBanned, invalidateSessionCache, markUserBanned } =
+      await import("@/lib/auth/session-cache");
     const { getRedis } = await import("@/lib/redis");
     const tokenHash = `test-hash-${Date.now()}`;
     const user = sampleUser();

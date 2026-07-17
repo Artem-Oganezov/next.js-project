@@ -62,9 +62,7 @@ export async function createSession(userId: string | Types.ObjectId): Promise<vo
     await Session.deleteMany({
       _id: { $in: staleSessions.map((s) => s._id) },
     });
-    await Promise.all(
-      staleSessions.map((s) => invalidateSessionCache(s.tokenHash)),
-    );
+    await Promise.all(staleSessions.map((s) => invalidateSessionCache(s.tokenHash)));
   }
 
   const user = await User.findById(userId);
@@ -161,9 +159,7 @@ export async function syncSessionCacheForUser(userId: string): Promise<void> {
 }
 
 /** Best-effort wipe of Redis session cache for all of a user's sessions. */
-export async function invalidateAllSessionCachesForUser(
-  userId: string,
-): Promise<void> {
+export async function invalidateAllSessionCachesForUser(userId: string): Promise<void> {
   await connectDB();
 
   const sessions = await Session.find({ userId }).select({ tokenHash: 1 });

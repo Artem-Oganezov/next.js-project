@@ -40,9 +40,7 @@ async function getCurrentSessionToken(): Promise<string> {
 }
 
 describe("Session cap", () => {
-  it(
-    `keeps at most ${MAX_SESSIONS_PER_USER} sessions per user and invalidates the oldest`,
-    async () => {
+  it(`keeps at most ${MAX_SESSIONS_PER_USER} sessions per user and invalidates the oldest`, async () => {
     const registerResponse = await registerPost(
       jsonRequest("http://localhost/api/auth/register", "POST", credentials),
     );
@@ -77,7 +75,5 @@ describe("Session cap", () => {
     cookieStore.set(SESSION_COOKIE_NAME, firstToken);
     const meWithOldest = await meGet(new Request("http://localhost/api/auth/me"));
     expect(meWithOldest.status).toBe(401);
-  },
-  60_000,
-  );
+  }, 60_000);
 });

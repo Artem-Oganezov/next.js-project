@@ -46,7 +46,8 @@ function createDinoEngine(seed) {
   let invincibleTicksRemaining = 0;
 
   const onGround = () =>
-    dino.velocityY === 0 && dino.y >= GAME_CONFIG.GROUND_Y - GAME_CONFIG.DINO_HEIGHT - 1;
+    dino.velocityY === 0 &&
+    dino.y >= GAME_CONFIG.GROUND_Y - GAME_CONFIG.DINO_HEIGHT - 1;
 
   const tick = (jumpRequested) => {
     if (gameOver) return;

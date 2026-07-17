@@ -23,7 +23,9 @@ export default function HomeLanding() {
 
   return (
     <section className="home-landing" aria-label={ui.seo.landingAriaLabel}>
-      <h1 className="home-landing-title">{ui.seo.landingTitle(gameMeta.displayName)}</h1>
+      <h1 className="home-landing-title">
+        {ui.seo.landingTitle(gameMeta.displayName)}
+      </h1>
       <p className="home-landing-lead">{ui.seo.landingLead}</p>
       <ul className="home-landing-features">
         {ui.seo.landingFeatures.map((item) => (

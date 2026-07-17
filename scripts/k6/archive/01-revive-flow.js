@@ -88,7 +88,9 @@ export default function () {
     "revive before min wait blocked (403)": (r) => r.status === 403,
   });
   if (tooEarlyRevive.status !== 403) {
-    console.log(`too-early revive unexpected: status=${tooEarlyRevive.status} body=${tooEarlyRevive.body}`);
+    console.log(
+      `too-early revive unexpected: status=${tooEarlyRevive.status} body=${tooEarlyRevive.body}`,
+    );
   }
 
   sleep(1.2);
@@ -102,6 +104,8 @@ export default function () {
     "revive after wait succeeds (200)": (r) => r.status === 200,
   });
   if (validRevive.status !== 200) {
-    console.log(`valid revive unexpected: status=${validRevive.status} body=${validRevive.body}`);
+    console.log(
+      `valid revive unexpected: status=${validRevive.status} body=${validRevive.body}`,
+    );
   }
 }

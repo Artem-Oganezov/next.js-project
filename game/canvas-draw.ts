@@ -147,12 +147,5 @@ export function drawStyledCactus(
   const armH = Math.max(4, height * 0.18);
   const armW = Math.max(8, width * 0.45);
   fillRoundRect(ctx, x - armW * 0.35, y + height * 0.28, armW, armH, armH / 2);
-  fillRoundRect(
-    ctx,
-    x + width - armW * 0.65,
-    y + height * 0.42,
-    armW,
-    armH,
-    armH / 2,
-  );
+  fillRoundRect(ctx, x + width - armW * 0.65, y + height * 0.42, armW, armH, armH / 2);
 }

@@ -1,6 +1,4 @@
-import {
-  invalidateAllSessionCachesForUser,
-} from "@/lib/auth/session";
+import { invalidateAllSessionCachesForUser } from "@/lib/auth/session";
 import { removeLeaderboardEntry } from "@/lib/cache/leaderboard";
 
 /**

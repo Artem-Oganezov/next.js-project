@@ -26,12 +26,12 @@ Checklist before sharing your game link with a large audience. This doc describe
 
 ## 4. Scale playbook
 
-| Signal | Action |
-|--------|--------|
-| High CPU on app nodes | Add app instance to nginx upstream |
+| Signal                                  | Action                                                        |
+| --------------------------------------- | ------------------------------------------------------------- |
+| High CPU on app nodes                   | Add app instance to nginx upstream                            |
 | Score jobs stay `pending` / queue grows | Scale worker replicas (`docker compose … --scale worker=<n>`) |
-| Static assets slow | Cloudflare cache / orange cloud |
-| Mongo connection pressure | Raise Atlas tier or tune `MONGODB_MAX_POOL_SIZE` |
+| Static assets slow                      | Cloudflare cache / orange cloud                               |
+| Mongo connection pressure               | Raise Atlas tier or tune `MONGODB_MAX_POOL_SIZE`              |
 
 There is no single “max online” figure baked into the template — gameplay is mostly client-side; server load concentrates on **death** (`POST /api/game/score`). Scale based on your metrics.
 

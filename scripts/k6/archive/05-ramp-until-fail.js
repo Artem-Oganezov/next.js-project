@@ -48,7 +48,9 @@ export const options = {
     },
   },
   thresholds: {
-    server_errors: [{ threshold: "count==0", abortOnFail: true, delayAbortEval: "15s" }],
+    server_errors: [
+      { threshold: "count==0", abortOnFail: true, delayAbortEval: "15s" },
+    ],
     checks: ["rate>0.95"],
   },
 };

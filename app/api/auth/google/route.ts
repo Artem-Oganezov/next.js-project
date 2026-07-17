@@ -12,7 +12,10 @@ import { msg } from "@/lib/i18n/messages";
 
 export const GET = withApiHandler("auth/google", async () => {
   if (!isGoogleOAuthEnabled()) {
-    return NextResponse.json({ message: msg.auth.googleNotConfigured }, { status: 503 });
+    return NextResponse.json(
+      { message: msg.auth.googleNotConfigured },
+      { status: 503 },
+    );
   }
 
   const state = generateGoogleOAuthState();

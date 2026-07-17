@@ -2,8 +2,7 @@ import { TICKS_PER_SECOND } from "@/game/engine";
 import { AntiCheatReason } from "@/lib/security/anti-cheat-reasons";
 
 export type ScoreValidationResult =
-  | { ok: true }
-  | { ok: false; code: string; message: string };
+  { ok: true } | { ok: false; code: string; message: string };
 
 export type ScoreRulesConfig = {
   maxScorePerSecond: number;
@@ -75,8 +74,7 @@ export function validateGameScore(
   }
 
   const minTicks = minRunTicks(config);
-  const ticksOk =
-    options?.replayTicks !== undefined && options.replayTicks >= minTicks;
+  const ticksOk = options?.replayTicks !== undefined && options.replayTicks >= minTicks;
   if (elapsedMs < config.minGameDurationMs && !ticksOk) {
     return {
       ok: false,

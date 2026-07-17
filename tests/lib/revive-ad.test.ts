@@ -107,9 +107,7 @@ describe("revive ad provider", () => {
   it("slot provider completes on window event", async () => {
     vi.stubEnv("NEXT_PUBLIC_REVIVE_AD_SLOT_ID", "revive-slot");
     const mount = createMockMountNode();
-    const provider = createSlotReviveAdProvider(
-      () => mount as unknown as HTMLElement,
-    );
+    const provider = createSlotReviveAdProvider(() => mount as unknown as HTMLElement);
 
     const promise = provider.show();
     await Promise.resolve();
@@ -122,9 +120,7 @@ describe("revive ad provider", () => {
   it("slot provider resolves dismissed on dismiss event", async () => {
     vi.stubEnv("NEXT_PUBLIC_REVIVE_AD_SLOT_ID", "revive-slot");
     const mount = createMockMountNode();
-    const provider = createSlotReviveAdProvider(
-      () => mount as unknown as HTMLElement,
-    );
+    const provider = createSlotReviveAdProvider(() => mount as unknown as HTMLElement);
 
     const promise = provider.show();
     await Promise.resolve();

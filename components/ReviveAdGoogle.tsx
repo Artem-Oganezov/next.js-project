@@ -2,10 +2,7 @@
 
 import Script from "next/script";
 import { useEffect, useRef } from "react";
-import {
-  getGamAdFormat,
-  getGamAdUnitPath,
-} from "@/lib/client/ads/gam-config";
+import { getGamAdFormat, getGamAdUnitPath } from "@/lib/client/ads/gam-config";
 import {
   REVIVE_AD_COMPLETE_EVENT,
   REVIVE_AD_DISMISSED_EVENT,
@@ -33,9 +30,7 @@ function showGamReviveAd(): void {
       if (settled) return;
       settled = true;
       dispatchReviveOutcome(
-        outcome === "complete"
-          ? REVIVE_AD_COMPLETE_EVENT
-          : REVIVE_AD_DISMISSED_EVENT,
+        outcome === "complete" ? REVIVE_AD_COMPLETE_EVENT : REVIVE_AD_DISMISSED_EVENT,
       );
       try {
         window.googletag.destroySlots();

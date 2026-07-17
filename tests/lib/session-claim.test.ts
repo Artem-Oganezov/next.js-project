@@ -1,6 +1,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { connectDB } from "@/lib/db/mongoose";
-import { releaseGameSessionClaim, releaseGameSessionPending } from "@/lib/game/session-claim";
+import {
+  releaseGameSessionClaim,
+  releaseGameSessionPending,
+} from "@/lib/game/session-claim";
 import { GameSession } from "@/lib/models/GameSession";
 import { User } from "@/lib/models/User";
 

@@ -43,7 +43,10 @@ export async function seedLeaderboardFromMongo(order: ScoreOrder): Promise<void>
   }
 }
 
-async function rankFromMongo(bestScore: number, order: ScoreOrder): Promise<RankResult> {
+async function rankFromMongo(
+  bestScore: number,
+  order: ScoreOrder,
+): Promise<RankResult> {
   await connectDB();
 
   const eligibleFilter = {

@@ -17,8 +17,7 @@ import type { ScoreOrder } from "@/lib/game/score-order";
 import { AntiCheatReason } from "@/lib/security/anti-cheat-reasons";
 
 export type InputParseResult =
-  | { ok: true; input: unknown }
-  | { ok: false; message: string };
+  { ok: true; input: unknown } | { ok: false; message: string };
 
 export type DinoInputLog = {
   jumpTicks: number[];
@@ -26,8 +25,7 @@ export type DinoInputLog = {
 };
 
 export type ReplayValidationResult =
-  | { ok: true; ticks: number }
-  | { ok: false; code: string; message: string };
+  { ok: true; ticks: number } | { ok: false; code: string; message: string };
 
 /**
  * The only game-specific backend entry point.

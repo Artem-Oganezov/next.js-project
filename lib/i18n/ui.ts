@@ -181,10 +181,8 @@ export const ui = {
     sessionMissing: "Run was not registered — score not saved",
     leaveConfirmRevive:
       "Leave without saving this score? Your current run will be lost.",
-    leaveConfirmPlaying:
-      "Leave the game? Your current run will not be saved.",
-    restartConfirmRevive:
-      "Restart without saving? Your current score will be lost.",
+    leaveConfirmPlaying: "Leave the game? Your current run will not be saved.",
+    restartConfirmRevive: "Restart without saving? Your current score will be lost.",
     saveFailed: "Could not save score — check your connection",
     savingScore: "Saving score…",
     scoreJobNotFound: "Score save job not found",

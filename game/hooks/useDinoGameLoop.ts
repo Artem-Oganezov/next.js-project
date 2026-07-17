@@ -71,13 +71,7 @@ export function useDinoGameLoop(
     onClearReviveOffer,
   } = options;
 
-  const {
-    resetGameRef,
-    watchAdRef,
-    saveScoreRef,
-    retrySessionRef,
-    adSlotRef,
-  } = refs;
+  const { resetGameRef, watchAdRef, saveScoreRef, retrySessionRef, adSlotRef } = refs;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -130,7 +124,10 @@ export function useDinoGameLoop(
       const scheduleRetry = () => {
         if (requestGeneration !== generation) return;
         if (attempt < SESSION_START_MAX_ATTEMPTS) {
-          window.setTimeout(() => startGameSession(attempt + 1), SESSION_START_RETRY_MS);
+          window.setTimeout(
+            () => startGameSession(attempt + 1),
+            SESSION_START_RETRY_MS,
+          );
           return;
         }
         onSessionLoading(false);

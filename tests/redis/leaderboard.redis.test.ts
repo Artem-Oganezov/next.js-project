@@ -25,9 +25,7 @@ describeRedis("Redis leaderboard cache", () => {
   });
 
   it("ignores stale top-10 after cache generation bump", async () => {
-    const entries = [
-      { username: "alpha", bestScore: 100, activeSkin: "default" },
-    ];
+    const entries = [{ username: "alpha", bestScore: 100, activeSkin: "default" }];
 
     await setCachedTop10(entries);
     await bumpLeaderboardCacheGeneration();

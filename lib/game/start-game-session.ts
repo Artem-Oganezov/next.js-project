@@ -15,7 +15,9 @@ export type StartedGameSession = {
 /**
  * Atomically revoke unsubmitted runs and create a new GameSession in one Mongo round-trip.
  */
-export async function startGameSessionForUser(userId: string): Promise<StartedGameSession> {
+export async function startGameSessionForUser(
+  userId: string,
+): Promise<StartedGameSession> {
   await connectDB();
 
   const startedAt = new Date();

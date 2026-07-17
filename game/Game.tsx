@@ -108,7 +108,10 @@ export default function Game({
     }
 
     setReviveCountdown(REVIVE_OFFER_COUNTDOWN_SEC);
-    void api.getLeaderboardRank().then(setReviveRank).catch(() => setReviveRank(null));
+    void api
+      .getLeaderboardRank()
+      .then(setReviveRank)
+      .catch(() => setReviveRank(null));
 
     const timerId = window.setInterval(() => {
       setReviveCountdown((prev) => (prev > 0 ? prev - 1 : 0));
@@ -128,9 +131,12 @@ export default function Game({
     return () => window.clearTimeout(timerId);
   }, [crashShake]);
 
-  const handleScoreSaved = useCallback((result: { bestScore: number; totalScore: number }) => {
-    onScoreSavedRef.current?.(result);
-  }, []);
+  const handleScoreSaved = useCallback(
+    (result: { bestScore: number; totalScore: number }) => {
+      onScoreSavedRef.current?.(result);
+    },
+    [],
+  );
 
   useDinoGameLoop(
     {
@@ -223,7 +229,11 @@ export default function Game({
       {showOnboarding && !sessionLoading && !reviveOffer && !gameOver && (
         <div className="game-onboarding" role="note">
           <p>{jumpHint}</p>
-          <button type="button" className="game-onboarding-dismiss" onClick={dismissOnboarding}>
+          <button
+            type="button"
+            className="game-onboarding-dismiss"
+            onClick={dismissOnboarding}
+          >
             {ui.game.onboardingDismiss}
           </button>
         </div>
@@ -245,9 +255,11 @@ export default function Game({
         )}
       </div>
 
-      {!reviveOffer && !gameOver && !sessionLoading && !sessionFailed && !showOnboarding && (
-        <p className="game-sub game-hint">{jumpHint}</p>
-      )}
+      {!reviveOffer &&
+        !gameOver &&
+        !sessionLoading &&
+        !sessionFailed &&
+        !showOnboarding && <p className="game-sub game-hint">{jumpHint}</p>}
 
       {(sessionLoading || sessionFailed) && !reviveOffer && !gameOver && (
         <SessionStatusOverlay

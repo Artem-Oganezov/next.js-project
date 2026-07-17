@@ -19,7 +19,12 @@ describe("scoreBodySchema", () => {
     const result = scoreBodySchema.safeParse({
       score: 42,
       sessionId,
-      inputLog: { actions: [[0, 1], [5, 2]] },
+      inputLog: {
+        actions: [
+          [0, 1],
+          [5, 2],
+        ],
+      },
     });
     expect(result.success).toBe(true);
   });

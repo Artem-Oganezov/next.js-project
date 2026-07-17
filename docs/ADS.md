@@ -71,11 +71,11 @@ Mobile and desktop browsers both count toward GAM web revenue in one report.
 
 The slot provider still emits window events if you replace GPT with another network:
 
-| Event | When |
-| ----- | ---- |
-| `revive-ad-request` | Player tapped continue; `detail: { slotId, mountNode }` |
-| `revive-ad-complete` | Grant revive |
-| `revive-ad-dismissed` | No revive; player can save score |
+| Event                 | When                                                    |
+| --------------------- | ------------------------------------------------------- |
+| `revive-ad-request`   | Player tapped continue; `detail: { slotId, mountNode }` |
+| `revive-ad-complete`  | Grant revive                                            |
+| `revive-ad-dismissed` | No revive; player can save score                        |
 
 Timeout: **120s** without an event → `failed`.
 

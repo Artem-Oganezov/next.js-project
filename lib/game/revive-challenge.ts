@@ -11,8 +11,7 @@ function challengeKey(sessionId: string): string {
 }
 
 export type ReviveChallengeResult =
-  | { ok: true; minWaitMs: number }
-  | { ok: false; code: "redis-unavailable" };
+  { ok: true; minWaitMs: number } | { ok: false; code: "redis-unavailable" };
 
 export async function issueReviveChallenge(
   sessionId: string,
@@ -20,11 +19,7 @@ export async function issueReviveChallenge(
   try {
     const redis = getRedis();
     const notBefore = (Date.now() + REVIVE_CHALLENGE_MIN_MS).toString();
-    await redis.setEx(
-      challengeKey(sessionId),
-      notBefore,
-      REVIVE_CHALLENGE_TTL_SEC,
-    );
+    await redis.setEx(challengeKey(sessionId), notBefore, REVIVE_CHALLENGE_TTL_SEC);
     return { ok: true, minWaitMs: REVIVE_CHALLENGE_MIN_MS };
   } catch {
     return { ok: false, code: "redis-unavailable" };
@@ -32,8 +27,7 @@ export async function issueReviveChallenge(
 }
 
 export type PeekReviveChallengeResult =
-  | { ok: true }
-  | { ok: false; code: "missing" | "too-early" | "redis-unavailable" };
+  { ok: true } | { ok: false; code: "missing" | "too-early" | "redis-unavailable" };
 
 /** Read-only timing gate; does not consume the challenge. */
 export async function peekReviveChallenge(
@@ -71,8 +65,7 @@ export async function clearReviveChallenge(sessionId: string): Promise<void> {
 }
 
 export type ConsumeReviveChallengeResult =
-  | { ok: true }
-  | { ok: false; code: "missing" | "too-early" | "redis-unavailable" };
+  { ok: true } | { ok: false; code: "missing" | "too-early" | "redis-unavailable" };
 
 /** @deprecated Prefer peekReviveChallenge + clearReviveChallenge in the revive route. */
 export async function consumeReviveChallenge(

@@ -25,8 +25,7 @@ export const msg = {
     passwordWrong: "Password is incorrect",
     newPasswordSame: "New password must differ from current password",
     emailAlreadyVerified: "Email is already verified",
-    resetEmailSent:
-      "If an account exists for this email, a reset link has been sent.",
+    resetEmailSent: "If an account exists for this email, a reset link has been sent.",
     verifyTokenRequired: "Token is required",
     verifyLinkInvalid: "Invalid or expired verification link",
     googleEmailTaken:

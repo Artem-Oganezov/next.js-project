@@ -1,10 +1,7 @@
 import { isGamReviveConfigured } from "@/lib/client/ads/gam-config";
 import { createSlotReviveAdProvider } from "@/lib/client/ads/slot-provider";
 import { createStubReviveAdProvider } from "@/lib/client/ads/stub-provider";
-import type {
-  ReviveAdProvider,
-  ReviveAdProviderMode,
-} from "@/lib/client/ads/types";
+import type { ReviveAdProvider, ReviveAdProviderMode } from "@/lib/client/ads/types";
 
 const unavailableProvider: ReviveAdProvider = {
   async show() {

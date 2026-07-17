@@ -5,15 +5,15 @@ It describes intentional design limits so you can evaluate the product honestly 
 
 ## Product scope
 
-| Included | Not included |
-|----------|----------------|
-| Auth (register, login, sessions, password reset, email verify) | Multi-game runtime in one deploy |
-| Leaderboard + rank (Mongo source of truth, Redis hot path) | Username change after scores are recorded |
-| Anti-cheat shell (one-time sessions + server replay) | Human/bot distinction beyond replay |
-| Skins / points economy | Server-side ad impression verification |
-| Admin panel (suspicious submits, ban/unban) | Built-in payment / IAP |
-| Docker + VPS deploy files | Managed hosting (you bring infra) |
-| Optional async score queue + worker | Cross-region active-active |
+| Included                                                       | Not included                              |
+| -------------------------------------------------------------- | ----------------------------------------- |
+| Auth (register, login, sessions, password reset, email verify) | Multi-game runtime in one deploy          |
+| Leaderboard + rank (Mongo source of truth, Redis hot path)     | Username change after scores are recorded |
+| Anti-cheat shell (one-time sessions + server replay)           | Human/bot distinction beyond replay       |
+| Skins / points economy                                         | Server-side ad impression verification    |
+| Admin panel (suspicious submits, ban/unban)                    | Built-in payment / IAP                    |
+| Docker + VPS deploy files                                      | Managed hosting (you bring infra)         |
+| Optional async score queue + worker                            | Cross-region active-active                |
 
 **Principle:** 1 repo = 1 game. Swap `game/` + `lib/game/plugin.ts` for a new title (~2h checklist in [NEW_GAME.md](NEW_GAME.md)).
 

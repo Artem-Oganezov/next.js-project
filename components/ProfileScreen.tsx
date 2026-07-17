@@ -7,11 +7,7 @@ import { useForm } from "react-hook-form";
 import DinoSvg from "@/components/ui/DinoSvg";
 import { SKINS, gameMeta } from "@/game";
 import { api } from "@/lib/client/api";
-import {
-  getApiErrorMessage,
-  useRankQuery,
-  useSkinMutations,
-} from "@/lib/client/hooks";
+import { getApiErrorMessage, useRankQuery, useSkinMutations } from "@/lib/client/hooks";
 import {
   changePasswordSchema,
   deleteAccountSchema,
@@ -59,11 +55,7 @@ export default function ProfileScreen({
   const safeUnlockedSkins = unlockedSkinsProp ?? ["default"];
   const safeActiveSkin = activeSkinProp ?? "default";
 
-  const {
-    data: rankData,
-    isLoading: rankLoading,
-    isError: rankError,
-  } = useRankQuery();
+  const { data: rankData, isLoading: rankLoading, isError: rankError } = useRankQuery();
 
   const { equipMutation, unlockMutation } = useSkinMutations(onUserUpdate);
   const skinBusy = equipMutation.isPending || unlockMutation.isPending;
@@ -177,9 +169,7 @@ export default function ProfileScreen({
           <b>
             {rankLoading && "…"}
             {rankError && "—"}
-            {!rankLoading &&
-              !rankError &&
-              (rankData ? `#${rankData.rank}` : "—")}
+            {!rankLoading && !rankError && (rankData ? `#${rankData.rank}` : "—")}
           </b>
         </div>
       </div>

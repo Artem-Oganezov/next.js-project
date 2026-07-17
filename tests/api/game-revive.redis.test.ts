@@ -51,7 +51,10 @@ async function startGameSession(): Promise<{ sessionId: string; seed: string }> 
   return (await response.json()) as { sessionId: string; seed: string };
 }
 
-async function backdateGameSession(sessionId: string, secondsAgo: number): Promise<void> {
+async function backdateGameSession(
+  sessionId: string,
+  secondsAgo: number,
+): Promise<void> {
   await connectDB();
   await GameSession.updateOne(
     { _id: sessionId },
@@ -92,7 +95,9 @@ describe("Game revive API", () => {
           inputLog: { jumpTicks: run.jumpTicks, reviveAtTick: run.reviveAtTick },
         }),
       );
-      const { status, body } = await parseJsonResponse<{ bestScore: number }>(scoreResponse);
+      const { status, body } = await parseJsonResponse<{ bestScore: number }>(
+        scoreResponse,
+      );
       expect(status).toBe(200);
       expect(body.bestScore).toBe(run.score);
     },

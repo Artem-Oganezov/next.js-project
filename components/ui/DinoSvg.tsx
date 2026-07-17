@@ -39,7 +39,13 @@ export default function DinoSvg({
   );
 }
 
-export function CactusSvg({ size = 28, className }: { size?: number; className?: string }) {
+export function CactusSvg({
+  size = 28,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
   return (
     <svg
       viewBox="0 0 28 38"

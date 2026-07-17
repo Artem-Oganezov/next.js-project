@@ -1,7 +1,10 @@
 import { randomUUID } from "crypto";
 import { SCORE_JOB_PROCESSING_TIMEOUT_MS } from "@/lib/config/score-async";
 import type { ScoreSubmitResult } from "@/lib/game/process-score";
-import { releaseGameSessionClaim, releaseGameSessionPending } from "@/lib/game/session-claim";
+import {
+  releaseGameSessionClaim,
+  releaseGameSessionPending,
+} from "@/lib/game/session-claim";
 import { msg } from "@/lib/i18n/messages";
 import { getRedis } from "@/lib/redis";
 

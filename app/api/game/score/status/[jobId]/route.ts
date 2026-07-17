@@ -50,11 +50,11 @@ function scoreStatusHandler(jobId: string) {
         status: job.status,
       });
     },
-  {
-    keyPrefix: "game:score:status",
-    maxRequests: RATE_LIMIT.SCORE_STATUS_MAX_REQUESTS,
-    windowMs: RATE_LIMIT.SCORE_STATUS_WINDOW_MS,
-  },
+    {
+      keyPrefix: "game:score:status",
+      maxRequests: RATE_LIMIT.SCORE_STATUS_MAX_REQUESTS,
+      windowMs: RATE_LIMIT.SCORE_STATUS_WINDOW_MS,
+    },
   );
 }
 

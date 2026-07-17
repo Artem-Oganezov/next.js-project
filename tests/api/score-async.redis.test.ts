@@ -92,10 +92,7 @@ describeRedis("Async score API", () => {
     expect(accepted.jobId).toBeTruthy();
 
     const pendingStatus = await scoreStatusGet(
-      jsonRequest(
-        `http://localhost/api/game/score/status/${accepted.jobId}`,
-        "GET",
-      ),
+      jsonRequest(`http://localhost/api/game/score/status/${accepted.jobId}`, "GET"),
       { params: Promise.resolve({ jobId: accepted.jobId }) },
     );
     expect(pendingStatus.status).toBe(200);
@@ -106,10 +103,7 @@ describeRedis("Async score API", () => {
     expect(processed).toBe(true);
 
     const completedStatus = await scoreStatusGet(
-      jsonRequest(
-        `http://localhost/api/game/score/status/${accepted.jobId}`,
-        "GET",
-      ),
+      jsonRequest(`http://localhost/api/game/score/status/${accepted.jobId}`, "GET"),
       { params: Promise.resolve({ jobId: accepted.jobId }) },
     );
     const { status, body } = await parseJsonResponse<{
@@ -148,10 +142,7 @@ describeRedis("Async score API", () => {
     const { jobId } = (await submitResponse.json()) as { jobId: string };
 
     await connectDB();
-    await GameSession.updateOne(
-      { _id: sessionId },
-      { $set: { scoreSubmitted: true } },
-    );
+    await GameSession.updateOne({ _id: sessionId }, { $set: { scoreSubmitted: true } });
 
     const { getRedis } = await import("@/lib/redis");
     const redis = getRedis();
