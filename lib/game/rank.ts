@@ -1,6 +1,8 @@
 import { LEADERBOARD_ELIGIBLE_FILTER } from "@/lib/game/leaderboard-eligibility";
 import {
   bulkSeedLeaderboard,
+  clearLeaderboardScores,
+  invalidateTop10,
   leaderboardSize,
   rankFromCache,
 } from "@/lib/cache/leaderboard";
@@ -76,6 +78,18 @@ export async function warmLeaderboardIfEmpty(): Promise<void> {
   } catch {
     // Best-effort; computeRank seeds on demand when Redis is available.
   }
+}
+
+/**
+ * Full rebuild of Redis rank ZSET from Mongo (source of truth).
+ * Use after Redis wipe, drift, or ops incidents — also via admin API / CLI.
+ */
+export async function rebuildLeaderboardFromMongo(): Promise<{ seeded: number }> {
+  await connectDB();
+  await clearLeaderboardScores();
+  await seedLeaderboardFromMongo(gamePlugin.scoreOrder);
+  await invalidateTop10();
+  return { seeded: await leaderboardSize() };
 }
 
 /**

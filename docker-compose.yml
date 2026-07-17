@@ -36,8 +36,8 @@ services:
       - redis_data:/data
     restart: unless-stopped
     # Port is not published externally: app connects over the compose internal network.
-    # For shared Redis across multiple servers, run it on a separate
-    # host/Upstash and update REDIS_URL.
+    # For shared Redis across multiple servers, run managed Redis on a separate
+    # host and update REDIS_URL.
 
 volumes:
   redis_data:

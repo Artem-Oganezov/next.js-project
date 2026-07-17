@@ -169,3 +169,8 @@ export async function popScoreJobPayload(
   if (!raw) return null;
   return JSON.parse(raw) as ScoreJobPayload;
 }
+
+/** Pending jobs waiting in the Redis list (not including in-flight processing). */
+export async function getScoreQueueDepth(): Promise<number> {
+  return getRedis().llen(SCORE_QUEUE_KEY);
+}

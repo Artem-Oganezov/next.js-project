@@ -58,4 +58,34 @@ describeRedis("Redis leaderboard cache", () => {
     const rank = await rankFromCache("solo", 100, "desc");
     expect(rank.rank).toBe(1);
   });
+
+  it("rebuilds ZSET from Mongo via rebuildLeaderboardFromMongo", async () => {
+    const { connectDB } = await import("@/lib/db/mongoose");
+    const { User } = await import("@/lib/models/User");
+    const { rebuildLeaderboardFromMongo } = await import("@/lib/game/rank");
+    const { clearLeaderboardScores, leaderboardSize, rankFromCache } =
+      await import("@/lib/cache/leaderboard");
+
+    await connectDB();
+    await User.create({
+      username: `rebuild_${Date.now()}`,
+      email: `rebuild_${Date.now()}@test.local`,
+      passwordHash: "x".repeat(60),
+      bestScore: 777,
+      totalScore: 777,
+    });
+
+    await clearLeaderboardScores();
+    expect(await leaderboardSize()).toBe(0);
+
+    const result = await rebuildLeaderboardFromMongo();
+    expect(result.seeded).toBeGreaterThanOrEqual(1);
+
+    const rank = await rankFromCache(
+      (await User.findOne({ bestScore: 777 }).sort({ createdAt: -1 }).lean())!.username,
+      777,
+      "desc",
+    );
+    expect(rank.rank).toBeGreaterThanOrEqual(1);
+  });
 });

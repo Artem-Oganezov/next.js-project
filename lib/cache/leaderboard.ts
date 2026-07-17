@@ -142,6 +142,11 @@ export async function bulkSeedLeaderboard(
   );
 }
 
+/** Drop the rank ZSET so it can be fully rebuilt from Mongo. */
+export async function clearLeaderboardScores(): Promise<void> {
+  await getRedis().del(SCORES_KEY);
+}
+
 export async function leaderboardSize(): Promise<number> {
   return getRedis().zcard(SCORES_KEY);
 }

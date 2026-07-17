@@ -5,7 +5,7 @@ Use this after local dev works and before pointing a real domain at the game.
 ## Infrastructure
 
 - [ ] MongoDB Atlas (or dedicated Mongo) — not on the app node
-- [ ] Redis — compose sidecar for one VPS, or Upstash / dedicated Redis for scale-out
+- [ ] Redis — compose sidecar for one VPS, or dedicated/managed Redis TCP for scale-out
 - [ ] `APP_URL=https://your-domain.com` — email links, Open Graph, verify/reset URLs
 - [ ] `AUTH_SECRET` — `openssl rand -base64 32`, identical on every app node
 - [ ] `ADMIN_SECRET` — ≥32 chars for `/admin` and protected metrics

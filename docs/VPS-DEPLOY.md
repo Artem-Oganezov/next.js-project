@@ -57,7 +57,7 @@ Key values:
 
 ```env
 MONGODB_URI=mongodb+srv://...
-REDIS_URL=rediss://...          # managed Redis (TCP), not Upstash REST
+REDIS_URL=rediss://...          # managed Redis (TCP)
 AUTH_SECRET=<openssl rand -base64 32>
 APP_URL=https://your-domain.com
 TRUST_PROXY=true

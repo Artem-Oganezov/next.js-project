@@ -8,7 +8,7 @@ Copy `.env.production.example` and fill every required value:
 
 - `MONGODB_URI` — Atlas or dedicated Mongo (not on the app node)
 - `AUTH_SECRET` — `openssl rand -base64 32` (identical on all app nodes)
-- `REDIS_URL` or Upstash REST credentials (shared across nodes)
+- `REDIS_URL` — shared managed Redis TCP across nodes
 - `ADMIN_SECRET` — ≥32 chars for `/admin` and metrics
 - `APP_URL=https://your-domain.com`
 - `TRUST_PROXY=true` behind nginx/Caddy
@@ -19,11 +19,12 @@ Copy `.env.production.example` and fill every required value:
 
 ## 2. Infrastructure
 
-- [ ] VPS with Docker, or Vercel + Upstash
+- [ ] VPS with Docker (`docker-compose.prod.yml`)
 - [ ] HTTPS (Caddy or nginx + certbot) — see [VPS-DEPLOY.md](VPS-DEPLOY.md)
 - [ ] nginx overwrites `X-Forwarded-For` (`nginx.example.conf`)
 - [ ] MongoDB IP whitelist / strong credentials
 - [ ] Uptime monitor on `GET /api/health` → `"status":"ok"`
+- [ ] Watch `scoreQueueDepth` under load; scale workers if it climbs
 
 ## 3. Smoke tests (production URL)
 
@@ -46,7 +47,7 @@ Copy `.env.production.example` and fill every required value:
 npm test
 npm run build
 git push origin main   # CI must pass
-docker compose up -d --build
+docker compose -f docker-compose.prod.yml up -d --build
 curl -s https://your-domain.com/api/health
 ```
 

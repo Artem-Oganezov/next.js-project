@@ -34,8 +34,8 @@ It describes intentional design limits so you can evaluate the product honestly 
 
 - **MongoDB** is authoritative for users, scores, sessions.
 - **Redis** caches rank, rate limits, optional async queue, session cache (~10 min TTL).
-- After score/skin/ban mutations, caches are synced or invalidated. Top-10 leaderboard cache uses a **generation counter** so ban/unban on one node invalidates stale entries on others (60s TTL fallback).
-- **Async score** (`SCORE_ASYNC=true`): client polls job status; eventual consistency until worker completes.
+- After score/skin/ban mutations, caches are synced or invalidated. Top-10 leaderboard cache uses a **generation counter** so ban/unban on one node invalidates stale entries on others (60s TTL fallback). If the Redis rank ZSET drifts, rebuild with `POST /api/admin/leaderboard/rebuild` or `npm run rebuild:leaderboard`.
+- **Async score** (`SCORE_ASYNC=true`): client polls job status; eventual consistency until worker completes. Watch `scoreQueueDepth` on `/api/health`.
 
 ## Infrastructure expectations
 

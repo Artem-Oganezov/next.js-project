@@ -100,6 +100,17 @@ describe("Admin API", () => {
     expect(response.status).toBe(401);
   });
 
+  it("POST /api/admin/leaderboard/rebuild returns 401 without secret", async () => {
+    const { POST: rebuildPost } =
+      await import("@/app/api/admin/leaderboard/rebuild/route");
+    const response = await rebuildPost(
+      new Request("http://localhost/api/admin/leaderboard/rebuild", {
+        method: "POST",
+      }),
+    );
+    expect(response.status).toBe(401);
+  });
+
   it("records suspicious submit and allows ban", async () => {
     const registerResponse = await registerPost(
       jsonRequest("http://localhost/api/auth/register", "POST", {

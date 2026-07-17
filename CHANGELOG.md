@@ -2,6 +2,24 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.8.0] — 2026-07-17
+
+### Added
+
+- **`scoreQueueDepth`** on `GET /api/health` and `GET /api/metrics` when `SCORE_ASYNC=true` (pending Redis list length).
+- **Leaderboard rebuild:** `POST /api/admin/leaderboard/rebuild` + `scripts/rebuild-leaderboard.ts` — full Redis ZSET rebuild from Mongo.
+- **Husky + lint-staged** pre-commit (Prettier + ESLint) to keep CI format/lint green.
+
+### Changed
+
+- **VPS-only Redis:** `REDIS_URL` (TCP / ioredis) is required. Upstash REST transport and `@upstash/redis` removed.
+- Docs (`DEPLOY`, `PRODUCTION`, README): serverless/Vercel path demoted; production defaults remain async + fail-closed + trust proxy.
+- Version bumped to **1.8.0**.
+
+### Removed
+
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` env support.
+
 ## [1.7.0] — 2026-07-07
 
 ### Added

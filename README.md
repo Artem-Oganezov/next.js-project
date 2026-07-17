@@ -20,20 +20,21 @@ Docs: [New game](docs/NEW_GAME.md) · [Deploy](docs/DEPLOY.md) ·
 - Top-10 leaderboard and player rank (Redis ZSET, O(log N))
 - Anti-cheat: one-time sessions + server-side **replay validation** — the server replays the run from seed + input log and verifies the score (see below)
 - Rate limiting in Redis by IP and userId (fail-open by default; `RATE_LIMIT_FAIL_CLOSED=true` for strict 429 when Redis is down)
-- Health check `GET /api/health` (Mongo + Redis + metrics summary) — for load balancers
-- Metrics `GET /api/metrics` (Prometheus text / JSON)
-- Admin panel `/admin` + API: suspicious submit log, user ban/unban
+- Health check `GET /api/health` (Mongo + Redis + optional `scoreQueueDepth`) — for load balancers
+- Metrics `GET /api/metrics` (Prometheus text / JSON; includes score queue depth when async)
+- Admin panel `/admin` + API: suspicious submit log, user ban/unban, leaderboard ZSET rebuild
 - Account management: password reset, email verification, change password, delete account
 - Security: CSP + Origin check middleware, timing-safe admin secret, atomic Redis rate limits
 - Stateless API: ready for multiple app servers behind a load balancer
 - Docker (standalone build), GitHub Actions: format, lint, unit/integration, Redis tests, E2E (Playwright), build
+- Pre-commit hooks (Husky + lint-staged) for Prettier + ESLint
 
 ## Stack
 
 - **Frontend:** Next.js App Router, React 19, Tailwind CSS 4, canvas
 - **Backend:** Route Handlers, Mongoose, Zod
 - **Data:** MongoDB (source of truth) + Redis (hot path: rank, rate limit)
-- **Deploy:** Docker on VPS (recommended) or Vercel + Upstash
+- **Deploy:** Docker on VPS (recommended). Stateless API behind nginx + score worker.
 
 ## Quick start (local)
 
@@ -93,7 +94,7 @@ Remaining boundary: replay proves the run followed game rules, not that a human 
 
 | Method       | Path                            | Description                                          |
 | ------------ | ------------------------------- | ---------------------------------------------------- |
-| `GET`        | `/api/health`                   | Mongo + Redis + observability summary                |
+| `GET`        | `/api/health`                   | Mongo + Redis + `scoreQueueDepth` (when async)       |
 | `GET`        | `/api/metrics`                  | Prometheus / JSON metrics                            |
 | `POST`       | `/api/auth/register`            | Register                                             |
 | `POST`       | `/api/auth/login`               | Log in                                               |
@@ -183,7 +184,7 @@ npm run build
 
 1. Set `ADMIN_SECRET` (≥32 chars) in `.env`.
 2. Open `/admin`, enter the secret — view anti-cheat submit log from MongoDB.
-3. API: `GET /api/admin/submissions`, `POST/DELETE /api/admin/users/:id/ban` with header `X-Admin-Secret`.
+3. API: `GET /api/admin/submissions`, `POST/DELETE /api/admin/users/:id/ban`, `POST /api/admin/leaderboard/rebuild` with header `X-Admin-Secret`.
 
 Banned users cannot log in; active sessions are cleared.
 

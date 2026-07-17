@@ -25,7 +25,8 @@
 │ MongoDB             │    │ Redis                     │
 │ source of truth:    │    │ hot path: rank ZSET,      │
 │ User, Session,      │    │ top-10 cache, rate limit  │
-│ GameSession (TTL)   │    │ (fail-open on outage)     │
+│ GameSession (TTL)   │    │ rate limit, score queue   │
+│                     │    │ (fail-closed recommended) │
 └─────────────────────┘    └───────────────────────────┘
 ```
 
@@ -37,7 +38,7 @@
 
 **Anti-cheat — heuristics + server replay.** One-time sessions (`GameSession`, atomic claim via `findOneAndUpdate`), score-per-second cap, min/max duration. On top of that, replay validation: the game is deterministic (fixed timestep 60 ticks/sec, `game/engine.ts`); the client sends a jump log; the server replays the run from the seed and compares the score bit-for-bit (`gamePlugin.validateReplay`, optional for non-deterministic games). Suspicious submissions go to stderr with `scope: "anti-cheat"`.
 
-**Redis degrades gracefully.** Rank falls back to Mongo `countDocuments`; top-10 falls back to a direct query; rate limiting is fail-open by default (the limiter must not take down the API; strict mode via `RATE_LIMIT_FAIL_CLOSED=true` returns 429 when Redis is down). `GET /api/health` returns `degraded` for monitoring.
+**Redis degrades gracefully.** Rank falls back to Mongo `countDocuments`; top-10 falls back to a direct query; rate limiting is fail-open by default (the limiter must not take down the API; production should set `RATE_LIMIT_FAIL_CLOSED=true` for 429 when Redis is down). `GET /api/health` returns `degraded` for monitoring and includes `scoreQueueDepth` when `SCORE_ASYNC=true`.
 
 **Sessions.** Token (32 bytes) in an httpOnly cookie; Mongo stores only SHA-256(token + AUTH_SECRET). TTL indexes clean expired Session and GameSession records. Cap on concurrent sessions per user (`MAX_SESSIONS_PER_USER`): on login, oldest sessions beyond the cap are removed — forgotten cookies do not live until TTL expiry.
 
@@ -57,5 +58,5 @@
 
 - Replay proves a run followed the rules but does not distinguish a human from a bot playing honestly (behavioral analysis is out of scope).
 - Rate limiting is fail-open by default when Redis is down (optional fail-closed via `RATE_LIMIT_FAIL_CLOSED=true`).
-- User update + ZSET are not in a transaction: if something fails between them, ZSET self-heals on the next rank read.
+- User update + ZSET are not in a transaction: if something fails between them, rebuild via `POST /api/admin/leaderboard/rebuild` or `npx tsx scripts/rebuild-leaderboard.ts` (ZSET also self-heals on empty seed).
 - Equal `bestScore` values share the same rank (consistent in Redis and Mongo).

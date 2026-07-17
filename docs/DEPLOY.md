@@ -1,19 +1,24 @@
 # Deployment
 
-## Option 1: VPS + Docker (recommended)
+## Target: VPS + Docker
+
+Self-hosted is the supported production path. See [VPS-DEPLOY.md](VPS-DEPLOY.md) for HTTPS and the multi-node stack.
 
 ```bash
 git clone <repo> && cd <repo>
-cp .env.example .env
-# Set:
+cp .env.production.example .env
+# Set at minimum:
 #   MONGODB_URI  — MongoDB Atlas or a separate server (NOT on the app node)
 #   AUTH_SECRET  — openssl rand -base64 32
-#   REDIS_URL    — redis://redis:6379 (compose starts Redis alongside the app)
-docker compose up -d --build
-curl http://localhost:3000/api/health   # expect "status":"ok"
+#   REDIS_URL    — managed Redis TCP (or redis://redis:6379 with single-node compose)
+#   TRUST_PROXY=true
+#   RATE_LIMIT_FAIL_CLOSED=true
+#   SCORE_ASYNC=true  — use with score worker
+docker compose -f docker-compose.prod.yml up -d --build
+curl http://127.0.0.1/api/health   # expect "status":"ok"
 ```
 
-Compose runs the app + Redis (AOF persistence, port not exposed publicly). Mongo is always external so data outlives app nodes.
+Single-node / lab: `docker compose up -d --build` (app + Redis sidecar). Mongo stays external so data outlives app nodes.
 
 ### Reverse proxy (required for production)
 
@@ -25,27 +30,29 @@ proxy_set_header X-Forwarded-For $remote_addr;
 
 TLS via certbot/Caddy in front of nginx or instead of it.
 
-## Option 2: Vercel + Upstash (serverless)
-
-1. MongoDB Atlas + Upstash Redis (REST).
-2. Vercel environment variables: `MONGODB_URI`, `AUTH_SECRET`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (instead of `REDIS_URL` — client is chosen automatically, see `lib/redis.ts`).
-3. Deploy. `output: "standalone"` in `next.config.ts` is ignored by Vercel — no change needed.
-
-Also set `APP_URL=https://your-domain.com` for correct email links and Open Graph URLs.
-
 ## Scaling to multiple servers
 
 The API is stateless; sticky sessions are not required.
 
-1. Move Redis off app nodes (separate host or Upstash) and update `REDIS_URL`.
+1. Use shared managed Redis (`REDIS_URL`) and Mongo across nodes.
 2. New VPS: same image + **same `.env`** (identical `AUTH_SECRET`!).
 3. Add the server to the load balancer upstream.
+4. Scale score workers when `scoreQueueDepth` on `/api/health` grows under load.
 
 `GET /api/health` returns 503 when Mongo is down — the LB removes the node. `degraded` (Redis down) means the node is alive but without cache and rate limiting.
 
+## Ops: rebuild leaderboard cache
+
+If Redis rank ZSET drifts from Mongo (wipe, incident):
+
+```bash
+npx tsx scripts/rebuild-leaderboard.ts
+# or: POST /api/admin/leaderboard/rebuild with X-Admin-Secret
+```
+
 ## Post-deploy checklist
 
-- [ ] `/api/health` → `"status":"ok"`
+- [ ] `/api/health` → `"status":"ok"` (optional: `scoreQueueDepth` when `SCORE_ASYNC=true`)
 - [ ] Registration + login work; cookie is `Secure` (NODE_ENV=production)
 - [ ] Forgot password email → `/reset-password` completes reset
 - [ ] Email verification link → `/verify-email?status=success`
@@ -55,3 +62,5 @@ The API is stateless; sticky sessions are not required.
 - [ ] `/privacy` and `/terms` pages are replaced with real legal text before launch
 
 Full live-game checklist: [LIVE-PROD.md](LIVE-PROD.md).
+
+> **Not supported as a product path:** serverless hosts without a long-lived score worker and TCP Redis (e.g. typical Vercel + REST-only Redis). The template is built for VPS/Docker.

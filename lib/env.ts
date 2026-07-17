@@ -17,23 +17,14 @@ const envSchema = z
       .max(500, "MONGODB_MAX_POOL_SIZE cannot exceed 500")
       .optional()
       .default(100),
-    // Option 1 (VPS / Docker): standard Redis over TCP.
+    // VPS / Docker / managed Redis over TCP (required).
     REDIS_URL: z
       .string()
+      .min(1, "REDIS_URL is required")
       .refine(
         (value) => value.startsWith("redis://") || value.startsWith("rediss://"),
         "REDIS_URL must start with redis:// or rediss://",
-      )
-      .optional(),
-    // Option 2 (serverless): Upstash REST API.
-    UPSTASH_REDIS_REST_URL: z
-      .string()
-      .refine(
-        (value) => value.startsWith("https://"),
-        "UPSTASH_REDIS_REST_URL must be a valid Upstash Redis REST URL",
-      )
-      .optional(),
-    UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+      ),
     // Fail-closed: when Redis is unavailable, rate-limited requests get 429
     // instead of being allowed through. Default false (fail-open; limiter does not break the API).
     RATE_LIMIT_FAIL_CLOSED: z
@@ -53,7 +44,7 @@ const envSchema = z
       .enum(["true", "false"])
       .optional()
       .transform((value) => value === "true"),
-    // Async score queue (VPS + score worker). Requires REDIS_URL (TCP), not Upstash-only.
+    // Async score queue (VPS + score worker). Requires REDIS_URL.
     SCORE_ASYNC: z
       .enum(["true", "false"])
       .optional()
@@ -83,24 +74,6 @@ const envSchema = z
         message: "APP_URL is required when Google OAuth is enabled",
       });
     }
-    const hasTcp = Boolean(env.REDIS_URL);
-    const hasUpstash = Boolean(
-      env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN,
-    );
-    if (!hasTcp && !hasUpstash) {
-      ctx.addIssue({
-        code: "custom",
-        message:
-          "Redis is required: set REDIS_URL or UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN",
-      });
-    }
-    if (env.SCORE_ASYNC && !hasTcp) {
-      ctx.addIssue({
-        code: "custom",
-        message:
-          "SCORE_ASYNC requires REDIS_URL (TCP); Upstash REST cannot run the score worker queue",
-      });
-    }
   });
 
 export type Env = z.infer<typeof envSchema>;
@@ -117,8 +90,6 @@ export function getEnv(): Env {
     AUTH_SECRET: process.env.AUTH_SECRET,
     MONGODB_MAX_POOL_SIZE: process.env.MONGODB_MAX_POOL_SIZE,
     REDIS_URL: process.env.REDIS_URL,
-    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     RATE_LIMIT_FAIL_CLOSED: process.env.RATE_LIMIT_FAIL_CLOSED,
     ADMIN_SECRET: process.env.ADMIN_SECRET,
     APP_URL: process.env.APP_URL,

@@ -131,7 +131,7 @@ export const ui = {
       },
       thirdParty: {
         title: "Third-party services",
-        body: "The game may use MongoDB Atlas, Redis/Upstash, SMTP email, and hosting providers. Each processes data under their own policies. List them here before public launch.",
+        body: "The game may use MongoDB Atlas, managed Redis, SMTP email, and hosting providers. Each processes data under their own policies. List them here before public launch.",
       },
     },
     termsSections: {

@@ -32,8 +32,6 @@ export function clearTestCookies(): void {
 export function applyBaseTestEnv(): void {
   process.env.AUTH_SECRET = "vitest-auth-secret-at-least-32-chars";
   process.env.SCORE_ASYNC = "false";
-  delete process.env.UPSTASH_REDIS_REST_URL;
-  delete process.env.UPSTASH_REDIS_REST_TOKEN;
   resetEnvCache();
 }
 

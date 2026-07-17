@@ -17,6 +17,7 @@ describe("Health API", () => {
       version: string;
       mongo: string;
       redis: string;
+      scoreQueueDepth: number | null;
       timestamp: string;
     };
 
@@ -27,6 +28,8 @@ describe("Health API", () => {
     expect(body.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(body.mongo).toBe("connected");
     expect(body.redis).toBe("disconnected");
+    expect(body).toHaveProperty("scoreQueueDepth");
+    expect(body.scoreQueueDepth).toBeNull();
     expect(new Date(body.timestamp).getTime()).not.toBeNaN();
   });
 

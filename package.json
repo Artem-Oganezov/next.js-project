@@ -1,6 +1,6 @@
 {
   "name": "dino-run",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -8,18 +8,26 @@
     "build:worker": "esbuild workers/score-worker.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/score-worker.cjs --packages=external --tsconfig=tsconfig.json",
     "start": "next start",
     "worker:score": "tsx workers/score-worker.ts",
+    "rebuild:leaderboard": "tsx scripts/rebuild-leaderboard.ts",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:redis": "vitest run --config vitest.redis.config.ts",
     "test:e2e": "playwright test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs}": [
+      "eslint --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{json,md,css,yml,yaml}": "prettier --write"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@tanstack/react-query": "^5.101.2",
-    "@upstash/redis": "^1.38.0",
     "bcryptjs": "^3.0.3",
     "google-auth-library": "^10.9.0",
     "ioredis": "^5.11.1",
@@ -43,6 +51,8 @@
     "esbuild": "^0.25.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.18",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
     "mongodb-memory-server": "^11.2.0",
     "prettier": "^3.5.3",
     "tailwindcss": "^4",

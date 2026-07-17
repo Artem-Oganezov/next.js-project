@@ -1,4 +1,3 @@
-import { Redis as UpstashRedis } from "@upstash/redis";
 import IORedis from "ioredis";
 import { getEnv } from "@/lib/env";
 
@@ -11,10 +10,7 @@ return c
 `;
 
 /**
- * Unified interface over two transports:
- * - REDIS_URL (ioredis, TCP) — VPS / Docker / managed Redis;
- * - UPSTASH_REDIS_REST_* (REST) — serverless deployment.
- *
+ * Redis client for VPS / Docker / managed Redis (TCP via ioredis).
  * The rest of the codebase depends only on this interface.
  */
 export type RedisClient = {
@@ -27,6 +23,7 @@ export type RedisClient = {
   incrWithExpire(key: string, exSeconds: number): Promise<number>;
   expire(key: string, seconds: number): Promise<void>;
   ttl(key: string): Promise<number>;
+  llen(key: string): Promise<number>;
   zadd(key: string, entries: { score: number; member: string }[]): Promise<void>;
   zrem(key: string, members: string[]): Promise<void>;
   zcard(key: string): Promise<number>;
@@ -39,7 +36,7 @@ export type RedisClient = {
   lpush(key: string, value: string): Promise<void>;
   /** Blocking right pop; null when timeout expires without a value. */
   brpop(key: string, timeoutSeconds: number): Promise<string | null>;
-  /** Batch commands in one round-trip (TCP pipeline; REST multi-exec). */
+  /** Batch commands in one round-trip (TCP pipeline). */
   pipeline(): RedisPipeline;
 };
 
@@ -122,6 +119,9 @@ function createIoRedisClient(url: string): RedisClient {
     },
     async ttl(key) {
       return run(() => client.ttl(key));
+    },
+    async llen(key) {
+      return run(() => client.llen(key));
     },
     async zadd(key, entries) {
       if (entries.length === 0) return;
@@ -224,132 +224,6 @@ function createIoRedisPipeline(
   return builder;
 }
 
-function createUpstashClient(url: string, token: string): RedisClient {
-  const client = new UpstashRedis({
-    url,
-    token,
-    automaticDeserialization: false,
-  });
-
-  return {
-    async ping() {
-      await client.ping();
-    },
-    async get(key) {
-      return client.get<string>(key);
-    },
-    async setEx(key, value, exSeconds) {
-      await client.set(key, value, { ex: exSeconds });
-    },
-    async del(key) {
-      await client.del(key);
-    },
-    async incr(key) {
-      return client.incr(key);
-    },
-    async incrWithExpire(key, exSeconds) {
-      const result = await client.eval(
-        INCR_WITH_EXPIRE_SCRIPT,
-        [key],
-        [String(exSeconds)],
-      );
-      return Number(result);
-    },
-    async expire(key, seconds) {
-      await client.expire(key, seconds);
-    },
-    async ttl(key) {
-      return client.ttl(key);
-    },
-    async zadd(key, entries) {
-      if (entries.length === 0) return;
-      const [first, ...rest] = entries;
-      await client.zadd(key, first, ...rest);
-    },
-    async zrem(key, members) {
-      if (members.length === 0) return;
-      await client.zrem(key, ...members);
-    },
-    async zcard(key) {
-      return client.zcard(key);
-    },
-    async zcountAbove(key, score) {
-      return client.zcount(key, `(${score}`, "+inf");
-    },
-    async zfirstAbove(key, score) {
-      const members = await client.zrange<string[]>(key, `(${score}`, "+inf", {
-        byScore: true,
-        offset: 0,
-        count: 1,
-      });
-      return members[0] ?? null;
-    },
-    async setNx(key, value, exSeconds) {
-      const result = await client.set(key, value, { nx: true, ex: exSeconds });
-      return result === "OK";
-    },
-    async lpush(key, value) {
-      await client.lpush(key, value);
-    },
-    async brpop(key, timeoutSeconds) {
-      const deadline = Date.now() + timeoutSeconds * 1000;
-      while (Date.now() < deadline) {
-        const value = await client.rpop<string>(key);
-        if (value) return value;
-        await new Promise((resolve) => setTimeout(resolve, 200));
-      }
-      return null;
-    },
-    pipeline() {
-      const pipe = client.pipeline();
-      return createUpstashPipeline(pipe);
-    },
-  };
-}
-
-function createUpstashPipeline(
-  pipe: ReturnType<UpstashRedis["pipeline"]>,
-): RedisPipeline {
-  const builder: RedisPipeline = {
-    zadd(key, entries) {
-      if (entries.length > 0) {
-        const [first, ...rest] = entries;
-        pipe.zadd(key, first, ...rest);
-      }
-      return builder;
-    },
-    zcountAbove(key, score) {
-      pipe.zcount(key, `(${score}`, "+inf");
-      return builder;
-    },
-    zfirstAbove(key, score) {
-      pipe.zrange(key, `(${score}`, "+inf", { byScore: true, offset: 0, count: 1 });
-      return builder;
-    },
-    incr(key) {
-      pipe.incr(key);
-      return builder;
-    },
-    del(key) {
-      pipe.del(key);
-      return builder;
-    },
-    setEx(key, value, exSeconds) {
-      pipe.set(key, value, { ex: exSeconds });
-      return builder;
-    },
-    lpush(key, value) {
-      pipe.lpush(key, value);
-      return builder;
-    },
-    async exec() {
-      const results = await pipe.exec();
-      return results as unknown[];
-    },
-  };
-  return builder;
-}
-
 let cachedClient: RedisClient | null = null;
 let warmPromise: Promise<void> | null = null;
 let ioRedisNative: IORedis | null = null;
@@ -360,23 +234,15 @@ export function getRedis(): RedisClient {
   }
 
   const env = getEnv();
-
-  if (env.REDIS_URL) {
-    cachedClient = createIoRedisClient(env.REDIS_URL);
-  } else if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
-    cachedClient = createUpstashClient(
-      env.UPSTASH_REDIS_REST_URL,
-      env.UPSTASH_REDIS_REST_TOKEN,
-    );
-  } else {
-    // getEnv() guarantees one of the options; this branch is unreachable.
-    throw new Error("Redis is not configured");
+  if (!env.REDIS_URL) {
+    throw new Error("Redis is not configured: set REDIS_URL");
   }
 
+  cachedClient = createIoRedisClient(env.REDIS_URL);
   return cachedClient;
 }
 
-/** Eager TCP/REST handshake so the first API request does not pay connect latency. */
+/** Eager TCP handshake so the first API request does not pay connect latency. */
 export function warmRedis(): Promise<void> {
   if (!warmPromise) {
     warmPromise = getRedis()
